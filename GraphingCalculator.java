@@ -8,6 +8,8 @@ import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
@@ -21,6 +23,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -70,42 +73,38 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		/*gcFrame.addWindowFocusListener(new WindowFocusListener() {
 			@Override
 			public void windowLostFocus(WindowEvent e) {
+				//clearGraphPanel();
 				//graphFormula(formulaText.getText());
-				gcFrame.repaint();
 			}
 
 			@Override
-			public void windowGainedFocus(WindowEvent e) {
+			public void windowGainedFocus(WindowEvent we) {
+				clearGraphPanel();
 				graphFormula(formulaText.getText());
+				System.out.println("Got here");
+				try { TimeUnit.MILLISECONDS.sleep(1000); } catch (InterruptedException e) { e.printStackTrace(); };
 			}
 		});*/
 	}
 
 	/*@Override
 	public void paint(Graphics g) {
-		super.paint(g);
-        Graphics2D g2d = (Graphics2D) g;
-
-        g2d.setColor(Color.red);
-        g2d.fillRect(250, 100, 50, 50);
-        g2d.setColor(Color.orange);
-        g2d.fillRect(250, 200, 50, 50);
-	}*/
-
-	/*@Override
-	public void paintComponent(Graphics g) {
-		super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g;
-
-        g2d.setColor(Color.red);
-        g2d.fillRect(600, 100, 50, 50);
-        g2d.setColor(Color.orange);
-        g2d.fillRect(600, 200, 50, 50);
+		//super.paint(g);
+		clearGraphPanel();
+		graphFormula(formulaText.getText());
 	}*/
 
 	@Override
+	public void paintComponent(Graphics g) {
+		//super.paintComponent(g);
+		clearGraphPanel();
+		graphFormula(formulaText.getText());
+	}
+
+	@Override
 	public void itemStateChanged(ItemEvent arg0) {
-		
+		super.setIgnoreRepaint(true);
+		clearGraphPanel();
 		graphFormula(formulaText.getText());
 	}
 
@@ -121,17 +120,12 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		    	graphics2d.setColor(Color.BLACK);
 		    	graphics2d.drawLine(0, displaySize/2, displaySize, displaySize/2);	// Horizontal graph center line
 		    	graphics2d.drawLine(displaySize/2, 0, displaySize/2, displaySize);	// Vertical graph center line
+		    	//graphFormula(formulaText.getText());
 		    }
 
 		    /*@Override
 	    	public void paintComponent(Graphics g) {
 				super.paintComponent(g);
-		    	Graphics2D graphics2d = (Graphics2D)g;
-
-		    	graphics2d.setColor(Color.blue);
-		    	graphics2d.fillRect(600, 100, 50, 50);
-		    	graphics2d.setColor(Color.green);
-		    	graphics2d.fillRect(600, 200, 50, 50);
 			}*/
 	    };
 
@@ -402,40 +396,40 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		graphics2d.setStroke(new BasicStroke(2));
 
 		// Perform basic check for equal number of open & close parentheses
-		if (StringUtils.countMatches(frml, "(") != StringUtils.countMatches(frml, ")")) {
-			// Popup warning
+		/*if (StringUtils.countMatches(frml, "(") != StringUtils.countMatches(frml, ")")) {
 			popupErrorMessage("Unequal number of open and close parentheses.");
 		}
-		else {
+		else {*/
+		if (noInputErrors(frml)) {
 			// Use regular expressions to parse exponents properly
-			String fmrlParsed = parseEquation(frml);
+			String frmlParsed = parseExponents(frml);
 
 			// Determine what type of equation was entered
 			// Polar coordinates: 'r=f(θ)'
-			if ((StringUtils.countMatches(fmrlParsed.trim(), "r=") > 0) || (StringUtils.countMatches(fmrlParsed.trim(), "=r") > 0)) {
-				graphPolarEquation(fmrlParsed, graphics2d);
+			if ((StringUtils.countMatches(frmlParsed.trim(), "r=") > 0) || (StringUtils.countMatches(frmlParsed.trim(), "=r") > 0)) {
+				graphPolarEquation(frmlParsed, graphics2d);
 			}
 			// 2-parameters: x & y
-			else if ((StringUtils.countMatches(fmrlParsed, "x") > 0) && (StringUtils.countMatches(fmrlParsed, "y") > 0)) {
+			else if ((StringUtils.countMatches(frmlParsed, "x") > 0) && (StringUtils.countMatches(frmlParsed, "y") > 0)) {
 				// Parametric: x=f1(z) AND y=f2(z)
-				if (StringUtils.countMatches(fmrlParsed, ";") > 0) {
-					graphParametericEquations(fmrlParsed, graphics2d);
+				if (StringUtils.countMatches(frmlParsed, ";") > 0) {
+					graphParametericEquations(frmlParsed, graphics2d);
 				}
 				// Cartesian: z=f(x,y)
 				else {
-					graphCartesianFunction(graphics2d, fmrlParsed);
+					graphCartesianFunction(graphics2d, frmlParsed);
 				}
 			}
 			// 1-parameter linear: 'y=f(x)' OR 'x=f(y)'
 			else {
-				graph1ParameterEquation(fmrlParsed, graphics2d);
+				graph1ParameterEquation(frmlParsed, graphics2d);
 			}
 		}
     }
 
     private static void graphCartesianFunction(Graphics2D grphcs2D, String function) {
 		String frmNoEquals = "";
-		Integer gridSize = 200; // Accommodates quadtree total but maps plot storage to graph size
+		Integer gridSize = 201; // Accommodates quadtree total but maps plot storage to graph size
 		QTContent[][] qtG = new QTContent[gridSize][gridSize];
 
 		long startTime = System.currentTimeMillis();
@@ -450,12 +444,12 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		else {
 			frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
 		}
-    	
+
 		// 1. Use quadtree-style algorithm to populate array list of 2d coordinates & related equation results
 		quadtreeStylePlot(graphics2d, frmNoEquals, 0, graphCenter, graphCenter, qtG);
 
 		// 2. Use marching squares algorithm to create graph from array list
-		//marchingSquares(graphics2d, qtG);//qtAL);
+		marchingSquares(graphics2d, qtG);
 
 		long endTime = System.currentTimeMillis();
 		System.out.println("graphCartesianFunction & marchingSquares took " + (endTime - startTime) + " milliseconds");
@@ -464,10 +458,10 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     // Use quadtree-style approach: Start with level 0, calculate function result based on coordinates provided,
     // graph function at coordinates if result is inside given threshold, subdivide screen into quadrants,
     // calculate new coordinates & next level, then call same method with new parameters for each quadrant (recursion)
-    private static void quadtreeStylePlot(Graphics2D grphcs2D, String function, int level, int xCoordinate, int yCoordinate, QTContent[][] qtG) {//ArrayList<QTContent> qtAL) {
+    private static void quadtreeStylePlot(Graphics2D grphcs2D, String function, int level, int xCoordinate, int yCoordinate, QTContent[][] qtG) {
 		String frmlRplc = "";
 		int nextLevel = 0, levelLimit = 7, newDivisor = 0, newAmount = 0, ulx =0, uly=0, urx=0, ury=0, llx=0, lly=0, lrx=0, lry=0;
-		double x=0D, y=0D, resultA = 0D, threshold = .067D;
+		double x=0D, y=0D, resultA = 0D;
 		Expression expression;
 
 		// Cartesian coordinates: test cases
@@ -482,7 +476,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// abs(x+y) + abs(x-y) = 5 // Square
 		// abs(abs(x)-abs(y)) = 2 // X sign / 2-directional v shapes (corners pointing inward)
 		// abs(abs(x + y) - abs(x - y)) = 2 // Plus sign / Inverted square (corners pointing inward)
-		// abs(x+y) * abs(x-y) = 2 // 2-directional hyperbola shapes
+		// abs(x+y) * abs(x-y) = 2 // 2-directional hyperbolic shapes
 		// sin((x^3)*(y^2)) - cos((x^2)*(y^3)) = 0 // Inverted quartered spiderweb
 		// (x^2)*(y^3) - (x^4)*y = y // Quartered hyperbolic curves pointing towards origin
 		// (y^2)*((y^2) - 4) = (x^2)*((x^2) - 9) // "devilish" curve
@@ -509,11 +503,14 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// (x^3)+(y^3)=3*2*x*y // Folium of Descartes
 		// ((x-1)^2) * ((x^2)+(y^2)) = 9*(x^2) // Nicomedes' Conchoid
 		// y^2 * (1+x) = x^2 * (3-x) // Maclaurin's Trisectrix
+		// abs(Gamma(y))=abs(Gamma(x)) // "Leaning Flower"
+		// (4*x^3)+(9*x*y^2)-(9*y^3)-(36*x)+(36*y) = 0 // "Almost yin/yang"
 		// Asymmetric
 		// ((x^3)*y) + ((y^3)*2) + (8*x) = 0 // Klein Quartic
 		// (2*(y^2)*((x^2)+(y^2))) - (2*(y^2)*(x+y)) + ((-26)*(y^2)) - (9*(x^2)) + (18*(x+y)) + 72 = 0 // Durer's Conchoid
 		// y*((x^2)+(y^2)) = 2*((x^2)-(y^2)) + 6*x*y // Strophoid
 		// x*y + x^3 + x^2 + x = .5 // Trident curve
+		// 0 = x^2*y + .1*x^5 - y^2 // Keratoid cusp
 
 		// Use this to slow down plotting enough to see it while it happens
 		//try { TimeUnit.MILLISECONDS.sleep(250); } catch (InterruptedException e) { e.printStackTrace(); }
@@ -538,15 +535,15 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		System.out.println("point:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA);
 
 		if ((0 >= resultA) && (Double.POSITIVE_INFINITY != resultA) && (Double.NEGATIVE_INFINITY != resultA)) {
-			System.out.println("graphing:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA);
+			//System.out.println("graphing:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA);
 
 			// Store only points inside the curve perimeter: may not need anything else to graph curve
-			//if (levelLimit == level) { // Maintains most of plot precision but accommodates plot storage as well
+			if (levelLimit == level) { // Maintains most of plot precision but accommodates plot storage as well
 				//qtG[xCoordinate/4][yCoordinate/4] = (new QTContent(xCoordinate, yCoordinate, resultA));
 				grphcs2D.fillRect((int) (xCoordinate), (int) (yCoordinate), 2, 2);
 				// NOTE: This shrinks & centerizes plot, but need to expand internal grid in order to expand plot
 				//grphcs2D.fillRect((int) (graphCenter/2)+(xCoordinate/2), (int) (graphCenter/2)+(yCoordinate/2), 2, 2);
-			//}
+			}
 		}
 
 		if (level < levelLimit) {
@@ -570,8 +567,11 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		}
 
 		// Store all visited points: may need everything so as to find curve perimeter
-		//if (levelLimit == level) {
-			qtG[xCoordinate/4][yCoordinate/4] = (new QTContent(xCoordinate, yCoordinate, resultA));
+		//if ((0 >= resultA) && (Double.POSITIVE_INFINITY != resultA) && (Double.NEGATIVE_INFINITY != resultA)) {
+			if (levelLimit == level) {
+				qtG[xCoordinate/4][yCoordinate/4] = (new QTContent(xCoordinate, yCoordinate, resultA));
+				//System.out.println("level: " + level + ", qtG:: x: " + xCoordinate/4 + ", y: " + yCoordinate/4 + ", QContent:: x: " + xCoordinate + ", y: " + yCoordinate);
+			}
 		//}
     }
 
@@ -583,7 +583,14 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     	// value >= 0 then isogrid value = 2, if only bottom right's value < 0 then isogrid value = 13)
     	Integer[][] msGrid = new Integer[199][199];
 
-    	// Simple nested loop to test if values are being transferred and used properly.
+    	// Initialize isogrid
+		for (int row = 0; row < msGrid.length; row++) {
+		    for (int col = 0; col < msGrid.length; col++) {
+		    	msGrid[row][col] = 0;
+		    }
+		}
+
+		// Simple nested loop to test if values are being transferred and used properly.
     	// See if can use quadtree-style approach here also (maybe not?)
     	/*for (int i = 0; i < 200; i++) {
     		for (int j = 0; j < 200; j++) {
@@ -601,95 +608,124 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			nextLine.setLength(0);
     	}*/
 
-    	// Step 1: Determine each isogrid element's value by checking each set of surrounding screen grid elements' values. 
-    	for (int i = 0; i < 199; i++) {
-    		for (int j = 0; j < 199; j++) {
-    			if (0>= qtG[j][i].getResult()) { msGrid[j][i] += 8; }		// Upper left screen grid element
-    			if (0>= qtG[j+1][i].getResult()) { msGrid[j][i] += 4; }		// Upper right screen grid element
-    			if (0>= qtG[j][i+1].getResult()) { msGrid[j][i] += 2; }		// Lower left screen grid element
-    			if (0>= qtG[j+1][i+1].getResult()) { msGrid[j][i] += 1; }	// Lower right screen grid element
-    		}
-    	}
+		// NOTE: need to increase size of squares being tested,because if test each individual dot then algorithm draws lines inside figures
+		// Use lowest level of points alone: produces more regular grid arrangement; using all points produces quincunx of 5 dots.
+    	// Step 1: Determine each isogrid element's value by checking each set of surrounding screen grid elements' values.
+		// Start from upper left, then move clockwise through upper right, then lower right, finally to lower left.
+		for (int iRow = 0; iRow < 197; iRow++) {
+    		for (int iCol = 0; iCol < 197; iCol++) {
+    			try {
+	    			if ((null != qtG[iRow][iCol].getResult())		&& (0>= qtG[iRow][iCol].getResult()))		{ msGrid[iRow][iCol] += 8; }	// Upper left screen grid element
+	    			if ((null != qtG[iRow][iCol+3].getResult())		&& (0>= qtG[iRow][iCol+3].getResult()))		{ msGrid[iRow][iCol] += 4; }	// Upper right screen grid element
+	    			if ((null != qtG[iRow+3][iCol+3].getResult())	&& (0>= qtG[iRow+3][iCol+3].getResult()))	{ msGrid[iRow][iCol] += 2; }	// Lower right screen grid element
+	    			if ((null != qtG[iRow+3][iCol].getResult())		&& (0>= qtG[iRow+3][iCol].getResult()))		{ msGrid[iRow][iCol] += 1; }	// Lower left screen grid element
+	    		}
+    			catch (NullPointerException npe) {
+    				continue;	// Should be able to ignore nulls
+    			}
+	    	}
+		}
+		// Original loop: produces lines inside shapes as well as outside
+    	/*for (int iRow = 0; iRow < 199; iRow++) {
+    		for (int iCol = 0; iCol < 199; iCol++) {
+    			try {
+	    			if ((null != qtG[iRow][iCol].getResult())		&& (0>= qtG[iRow][iCol].getResult()))		{ msGrid[iRow][iCol] += 8; }	// Upper left screen grid element
+	    			if ((null != qtG[iRow][iCol+1].getResult())		&& (0>= qtG[iRow][iCol+1].getResult()))		{ msGrid[iRow][iCol] += 4; }	// Upper right screen grid element
+	    			if ((null != qtG[iRow+1][iCol+1].getResult())	&& (0>= qtG[iRow+1][iCol+1].getResult()))	{ msGrid[iRow][iCol] += 2; }	// Lower right screen grid element
+	    			if ((null != qtG[iRow+1][iCol].getResult())		&& (0>= qtG[iRow+1][iCol].getResult()))		{ msGrid[iRow][iCol] += 1; }	// Lower left screen grid element
+	    		}
+    			catch (NullPointerException npe) {
+    				continue;	// Should be able to ignore nulls
+    			}
+	    	}
+		}*/
 
-    	// Step 2: Match each isogrid element's value with appropriate case value, then draw the correct lines.
+		// Step 2: Match each isogrid element's value with appropriate case value, then draw the correct lines.
     	// NOTE: Instead of 1 line between screen points, check if can add extra point between them for more
     	// precision. Need to determine new point location: usually not on same straight line between start & end.
-    	/*for (int i = 0; i < 199; i++) {
-    		for (int j = 0; j < 199; j++) {
-    			switch (msGrid[j][i]) {
-					case 0 :	break;	// Do nothing
-					case 1 :	// Upper left to lower right
-								grphcs2D.drawLine(qtG[j][i].getX(), qtG[j][i].getY(), qtG[j+1][i+1].getX(), qtG[j+1][i+1].getY());
-								//grphcs2D.drawLine(x1, y1, x1.5, y1.5);
-								//grphcs2D.drawLine(x1.5, y1.5, x2, y2);
-								break;
-					case 2 :	// Lower left to upper right
-								grphcs2D.drawLine(qtG[j][i+1].getX(), qtG[j][i+1].getY(), qtG[j+1][i].getX(), qtG[j+1][i].getY());
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								break;
-					case 3 :	// Upper left to upper right
-								grphcs2D.drawLine(qtG[j][i].getX(), qtG[j][i].getY(), qtG[j+1][i].getX(), qtG[j+1][i].getY());
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								break;
-					case 4 :	// Upper left to lower right
-								grphcs2D.drawLine(qtG[j][i].getX(), qtG[j][i].getY(), qtG[j+1][i+1].getX(), qtG[j+1][i+1].getY());
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								break;
-					case 5 :	grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								break;
-					case 6 :	// Upper right to lower right
-								grphcs2D.drawLine(qtG[j+1][i].getX(), qtG[j+1][i].getY(), qtG[j+1][i+1].getX(), qtG[j+1][i+1].getY());
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								break;
-					case 7 :	// Lower left to upper right
-								grphcs2D.drawLine(qtG[j][i+1].getX(), qtG[j][i+1].getY(), qtG[j+1][i].getX(), qtG[j+1][i].getY());
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								break;
-					case 8 :	// Lower left to upper right
-								grphcs2D.drawLine(qtG[j][i+1].getX(), qtG[j][i+1].getY(), qtG[j+1][i].getX(), qtG[j+1][i].getY());
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								break;
-					case 9 :	// Upper left to lower left
-								grphcs2D.drawLine(qtG[j][i].getX(), qtG[j][i].getY(), qtG[j][i+1].getX(), qtG[j][i+1].getY());
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								break;
-					case 10 :	grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								break;
-					case 11 :	// Upper left to lower right
-								grphcs2D.drawLine(qtG[j][i].getX(), qtG[j][i].getY(), qtG[j+1][i+1].getX(), qtG[j+1][i+1].getY());
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								break;
-					case 12 :	// Lower left to lower right
-								grphcs2D.drawLine(qtG[j][i+1].getX(), qtG[j][i+1].getY(), qtG[j+1][i+1].getX(), qtG[j+1][i+1].getY());
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								break;
-					case 13 :	// Lower left to upper right
-								grphcs2D.drawLine(qtG[j][i+1].getX(), qtG[j][i+1].getY(), qtG[j+1][i].getX(), qtG[j+1][i].getY());
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								break;
-					case 14 :	// Upper left to lower right
-								grphcs2D.drawLine(qtG[j][i].getX(), qtG[j][i].getY(), qtG[j+1][i+1].getX(), qtG[j+1][i+1].getY());
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								//grphcs2D.drawLine(x1, y1, x2, y2);
-								break;
-					case 15 :	break;	// Do nothing
+    	for (int iRow = 0; iRow < 199; iRow++) {
+    		for (int iCol = 0; iCol < 199; iCol++) {
+    			try {
+	    			switch (msGrid[iCol][iRow]) {
+						case 0 :	break;	// All squares empty, so do nothing
+						case 1 :	// Lower left square filled, so draw from lower left top edge center to lower left right edge center
+									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());
+									//grphcs2D.drawLine(x1, y1, x1.5, y1.5);
+									//grphcs2D.drawLine(x1.5, y1.5, x2, y2);
+									break;
+						case 2 :	// Lower right square filled, so draw from lower right top edge center to lower right left edge center
+									grphcs2D.drawLine(qtG[iCol][iRow+1].getX(), qtG[iCol][iRow+1].getY(), qtG[iCol+1][iRow].getX(), qtG[iCol+1][iRow].getY());
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									break;
+						case 3 :	// Both lower squares filled, so draw from lower left top edge center to lower right top edge center
+									grphcs2D.drawLine(qtG[iRow+1][iCol].getX(), qtG[iRow+1][iCol].getY(), qtG[iRow+1][iCol+1].getX(), qtG[iRow+1][iCol+1].getY());
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									break;
+						case 4 :	// Upper right square filled, so draw from upper right left edge center to upper right bottom edge center
+									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									break;
+						case 5 :	// Upper right & lower left filled, which is ambiguous, so need to check if squares somehow connect
+									grphcs2D.drawLine(qtG[iCol][iRow+1].getX(), qtG[iCol][iRow+1].getY(), qtG[iCol+1][iRow].getX(), qtG[iCol+1][iRow].getY());
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									break;
+						case 6 :	// Both right squares filled, so draw from upper right left edge center to lower right left edge center
+									grphcs2D.drawLine(qtG[iRow][iCol+1].getX(), qtG[iRow][iCol+1].getY(), qtG[iRow+1][iCol+1].getX(), qtG[iRow+1][iCol+1].getY());
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									break;
+						case 7 :	// Upper left square empty, so draw from upper right left edge center to lower left top edge center
+									grphcs2D.drawLine(qtG[iCol][iRow+1].getX(), qtG[iCol][iRow+1].getY(), qtG[iCol+1][iRow].getX(), qtG[iCol+1][iRow].getY());
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									break;
+						case 8 :	// Upper left square filled, so draw from upper left bottom edge center to upper left right edge center
+									grphcs2D.drawLine(qtG[iCol][iRow+1].getX(), qtG[iCol][iRow+1].getY(), qtG[iCol+1][iRow].getX(), qtG[iCol+1][iRow].getY());
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									break;
+						case 9 :	// Both left squares filled, so draw from upper left right edge center to lower left right edge center
+									grphcs2D.drawLine(qtG[iRow][iCol].getX(), qtG[iRow][iCol].getY(), qtG[iRow+1][iCol].getX(), qtG[iRow+1][iCol].getY());
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									break;
+						case 10 :	// Upper left & lower right filled, which is ambiguous, so need to check if squares somehow connect
+									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									break;
+						case 11 :	// Upper right square empty, so draw from upper left right edge center to lower right top edge center
+									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									break;
+						case 12 :	// Both upper squares filled, so draw from upper left bottom edge center to upper right bottom edge center
+									grphcs2D.drawLine(qtG[iRow][iCol].getX(), qtG[iRow][iCol].getY(), qtG[iRow][iCol+1].getX(), qtG[iRow][iCol+1].getY());
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									break;
+						case 13 :	// Lower right square empty, so draw from lower left right edge center to upper right left edge center
+									grphcs2D.drawLine(qtG[iCol][iRow+1].getX(), qtG[iCol][iRow+1].getY(), qtG[iCol+1][iRow].getX(), qtG[iCol+1][iRow].getY());
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									break;
+						case 14 :	// Lower left square empty, so draw from upper left bottom edge center to lower right left edge center
+									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									//grphcs2D.drawLine(x1, y1, x2, y2);
+									break;
+						case 15 :	break;	// All squares filled, so do nothing
+	    			}
+	    		}
+    			catch (NullPointerException npe) {
+    				continue;	// Should be able to ignore nulls
     			}
     		}
-    	}*/
+    	}
     }
 
     private static void graph1ParameterEquation(String frml, Graphics2D grphcs2D) {
@@ -787,6 +823,10 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// r=+-(3*sin(theta)) / (1+cos(theta)*cos(2*theta)) // Pretzel
 		// Left/right half only
 		// r=(3*cos(theta)) / (1+sin(theta)*sin(2*theta)) // Boomerang
+		// r=4*cot(e*theta) // Flower
+		// r=+-(4*cot(theta/2))^.5 // Serpentine curve
+		// r=3*cos((4*theta)-(5*pi/18))+(3*0.07*sin(80*theta)) // Jagged leaved flower
+		// r=(sin(theta) + sin(2.5*theta)^3)*4 // Scallop shell
 		// Determine if equation has fixed value & which side of equation has that value.
 		if ("r".equalsIgnoreCase(StringUtils.substringBefore(frml, "="))) {
 			frmlNoEquals = StringUtils.substringAfter(frml, "=");
@@ -848,6 +888,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// x=8*sin(z)^3 ; y=6*cos(z) - 2*cos(2*z) - 1*cos(3*z) - cos(4*z) // Heart curve
 		// x=4*sin(z) ; y=4*((cos(z)^2)*((2+cos(z))/(3+(sin(z)^2)))) // Bicorn curve
 		// x=.5*(1-(3*(z^2))) ; y=.5*z*(3-(z^2)) // Tschirnhausen cubic
+		// x=(1+ .75*sin(z)^2)*cos(z) *4; y=(1-.75 -.75*cos(z)^2)*sin(z)*4 // Talbot's curve
 		// x=cos(z)+0.2*sin(e*z) ; y=sin(z)+0.2*cos(e*z) // Spirograph ring
 		// x=((1*cos(z)) / (cos(z) - sin(z))) + 3*cos(z) ; y = 3*sin(z) // Durer's Conchoid
 		// x=cos(z)+(cos(12*z)/4)-(sin(-28*z)/9) ; y=sin(z)+(sin(12*z)/4)+(cos(-28*z)/9) // Complex Spirograph ring
@@ -928,10 +969,49 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		}
     }
 
+	public static boolean noInputErrors(String equation) {
+		boolean isInputOkay = false;
+		String inputNoWhitespace = equation.replaceAll("\\s", "");
+
+		String regexDups =  ".*([xyzre\\+\\-\\=\\^\\.\\;])\\1+.*";
+		Pattern patternDups = Pattern.compile(regexDups);
+		Matcher matcherDups = patternDups.matcher(inputNoWhitespace);
+
+		String regexNumParmOnly =  "[xyzre0-9]+";
+		Pattern patternNumParmOnly = Pattern.compile(regexNumParmOnly);
+		Matcher matcherNumParmOnly = patternNumParmOnly.matcher(inputNoWhitespace);
+
+		String regexOpsOnly =  "[\\+\\-\\=\\^\\.\\;\\)\\(]+";
+		Pattern patternOpsOnly = Pattern.compile(regexOpsOnly);
+		Matcher matcherOpsOnly = patternOpsOnly.matcher(inputNoWhitespace);
+
+		if (StringUtils.countMatches(inputNoWhitespace, "(") != StringUtils.countMatches(inputNoWhitespace, ")")) {
+			popupErrorMessage("Unbalanced parentheses.");
+		}
+		else if (StringUtils.contains(inputNoWhitespace, "()")) {
+			popupErrorMessage("Empty parentheses.");
+		}
+		else if (matcherDups.find()) {
+			popupErrorMessage("Duplicate characters.");
+		}
+		// Check last for missing items because otherwise other tests could fail
+		else if (!matcherNumParmOnly.find()) {
+			popupErrorMessage("Missing numbers / parameters.");
+		}
+		else if (!matcherOpsOnly.find()) {
+			popupErrorMessage("Missing operators.");
+		}
+		else {
+			isInputOkay = true;
+		}
+
+		return isInputOkay;
+	}
+
 	// Use regular expressions to parse exponents properly. Ex: convert "x^N", "y^N", "z^N" to "(x^N)", "(y^N)", "(z^N)"
-	// Makes equation evaluation more robust, because user can input "(x^2.3 + y^4)" instead of "((x^2.3) + (y^4))",
-	// and program can parse it correctly. Include further values in regex if add any to keyboard.
-	public static String parseEquation(String equation) {
+	// Makes equation evaluation more robust, because user can input "(x^2.3 + y^-4)" instead of "((x^2.3) + (y^-4))",
+	// and program can parse it correctly. Include further values in regex if add any parameter buttons to keyboard.
+	public static String parseExponents(String equation) {
 		String regex = "(([xyzre]\\^)([-+]?([0-9]*\\.[0-9]+|[0-9]+)))";
 		Pattern pattern = Pattern.compile(regex);
 		Matcher matcher = pattern.matcher(equation);
@@ -945,6 +1025,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		return replacement.toString();
 	}
 
+	// Popup warning
 	public static void popupErrorMessage(String errorMessage) {
 		JOptionPane.showMessageDialog(null, errorMessage, errorMessage, JOptionPane.ERROR_MESSAGE, null);
 	}
@@ -963,6 +1044,15 @@ public class GraphingCalculator extends JPanel implements ItemListener {
    		if (Math.abs(firstNumber - secondNumber) > threshold) { aboveThrshld = true; }
 
     	return aboveThrshld;
+    }
+
+    private static Double slope(int startX, int startY, int endX, int endY) {
+    	Double slopeValue = 0D;
+
+    	try { slopeValue = (double) ((endY - startY) / (endX - startX)); }
+    	catch (ArithmeticException ae) { slopeValue = Double.POSITIVE_INFINITY; }
+
+    	return slopeValue;
     }
 
     // Checks whether equation uses any of listed operations. Include new operations here if add any to keyboard
