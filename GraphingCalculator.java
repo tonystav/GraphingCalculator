@@ -409,7 +409,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			if ((StringUtils.countMatches(frmlParsed.trim(), "r=") > 0) || (StringUtils.countMatches(frmlParsed.trim(), "=r") > 0)) {
 				graphPolarEquation(frmlParsed, graphics2d);
 			}
-			// 2-parameters: x & y
+			// 2-parameters: x AND y
 			else if ((StringUtils.countMatches(frmlParsed, "x") > 0) && (StringUtils.countMatches(frmlParsed, "y") > 0)) {
 				// Parametric: x=f1(z) AND y=f2(z)
 				if (StringUtils.countMatches(frmlParsed, ";") > 0) {
@@ -420,9 +420,19 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					graphCartesianFunction(graphics2d, frmlParsed);
 				}
 			}
-			// 1-parameter linear: 'y=f(x)' OR 'x=f(y)'
+			// 1-parameter x OR y
 			else {
-				graph1ParameterEquation(frmlParsed, graphics2d);
+				// Plain straight line: x=n OR y=n
+				if ((StringUtils.countMatches(frmlParsed, "x=") > 0)
+				|| (StringUtils.countMatches(frmlParsed, "=x") > 0)
+				|| (StringUtils.countMatches(frmlParsed, "y=") > 0)
+				|| (StringUtils.countMatches(frmlParsed, "=y") > 0)) {
+					graphStraightLine(frmlParsed, graphics2d);
+				}
+				// 1-parameter linear: 'y=f(x)' OR 'x=f(y)'
+				else {
+					graph1ParameterEquation(frmlParsed, graphics2d);
+				}
 			}
 		}
     }
@@ -728,15 +738,28 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     	}
     }
 
+    private static void graphStraightLine(String frml, Graphics2D grphcs2D) {
+    	String frmlRplc = frml.replaceAll("x=", "").replaceAll("=x", "").replaceAll("y=", "").replaceAll("=y", "").replaceAll("--", "");
+		Expression expression = new Expression(frmlRplc);
+		int result = (int) expression.calculate() * 50;
+
+    	if (frml.contains("x")) {
+    		grphcs2D.drawLine((graphCenter) + result, 0, (graphCenter)  + result, displaySize);
+    	}
+    	else {
+    		grphcs2D.drawLine(0, (graphCenter) - result, displaySize, (graphCenter) - result);
+    	}
+    }
+
     private static void graph1ParameterEquation(String frml, Graphics2D grphcs2D) {
 		String frmlRplc = "";
 		int resultX = 0, resultY = 0, prvsX = 0, prvsY = 0;
-		Double threshold = 0.1D;
 		Expression expression;
 
     	// 1-parameter equation: 'y=f(x)', 'x=f(y)'
 		// +/-(1-(x^2))^.5 // Circle
 		// sgn(tan(x)-cot(x)) // 2 parallel dashed lines
+
 		for (float i=-graphCenter*10; i<=graphCenter*10; i++) {
 			float fi = i / 100;
 
@@ -782,18 +805,21 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			// Interpolate extra point between basic points
 			grphcs2D.fillRect((resultX - prvsX), (resultY - prvsY), 1, 1);
 
+			//System.out.println("frmlRplc: " + frmlRplc + ", resultX: " + resultX + ", resultY: " + resultY + ", prvsX: " + prvsX + ", prvsY: " + prvsY + ", slope(prvsX, prvsY, resultX, resultY): " + slope(prvsX, prvsY, resultX, resultY));
+
 			// Connect any gaps. Check test conditions either too lenient or too restrictive
 			if (solidLines) {
-				if (prvsX != 0 && prvsY != 0)
+				if ((prvsX != 0 && prvsY != 0) ||
+				((containsFunction(frmlRplc)) && (Double.isFinite(slope(prvsX, prvsY, resultX, resultY))))) {
 				//if ((prvsX != 0) && (prvsY != 0)
-				//&& (Math.abs(targetValue - resultX) < threshold) && (Math.abs(targetValue - resultY) < threshold)
+				//&& (Double.isFinite(slope(prvsX, prvsY, resultX, resultY)))
 				//&& (slope(prvsX, prvsY, resultX, resultY) > Double.NEGATIVE_INFINITY)
 				//&& (slope(prvsX, prvsY, resultX, resultY) < Double.POSITIVE_INFINITY)
 				//&& (slope(prvsX, prvsY, resultX, resultY) < Double.MAX_VALUE)
 				//&& (slope(prvsX, prvsY, resultX, resultY) > Double.MIN_VALUE)
 				//&& (slope(prvsX, prvsY, resultX, resultY) > 0)) {
 					grphcs2D.drawLine((int) (prvsX), (int) (prvsY), (int) (resultX), (int) (resultY));
-				//}
+				}
 
 				prvsX = resultX; prvsY = resultY;
 			}
@@ -912,7 +938,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				yEquation = leftEquation;	xEquation = rightEquation;
 			}
 
-			// Extract equation formulas: remove parameter assignments ("x=", "y=")
+			// Extract equation formulas: remove parameter assignments ("x=", "=x", "y=", "=y")
 			if (StringUtils.substringBefore(xEquation, "=").contains("x")) {
 				xEquation = StringUtils.substringAfter(xEquation, "=");
 			}
@@ -995,15 +1021,15 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			popupErrorMessage("Duplicate characters.");
 		}
 		// Check last for missing items because otherwise other tests could fail
-		else if (!matcherNumParmOnly.find()) {
+		else if ((!matcherNumParmOnly.find())
+			&& (StringUtils.countMatches(inputNoWhitespace, "pi") == 0)
+			&& (StringUtils.countMatches(inputNoWhitespace, "[phi]") == 0)) {
 			popupErrorMessage("Missing numbers / parameters.");
 		}
-		else if (!matcherOpsOnly.find()) {
-			popupErrorMessage("Missing operators.");
-		}
-		else {
-			isInputOkay = true;
-		}
+		/*else if ((!matcherOpsOnly.find()) && (!("x".equalsIgnoreCase(equation)) && (!("y".equalsIgnoreCase(equation))))) {
+				popupErrorMessage("Missing operators.");
+		}*/
+		else { isInputOkay = true; }
 
 		return isInputOkay;
 	}
