@@ -600,24 +600,6 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		    }
 		}
 
-		// Simple nested loop to test if values are being transferred and used properly.
-    	// See if can use quadtree-style approach here also (maybe not?)
-    	/*for (int i = 0; i < 200; i++) {
-    		for (int j = 0; j < 200; j++) {
-    			nextQTC = qtG[j][i];
-        		// This proves that the grid is available & readable: it simply plots the same image as created previously
-    			if ((null != nextQTC) && (0>= nextQTC.getResult())) {
-    				grphcs2D.fillRect((int) (nextQTC.getX()), (int) (nextQTC.getY()), 2, 2);
-
-    				nextLine.append('X');
-    			}
-    			else { nextLine.append(' '); }
-    		}
-
-			System.out.println(nextLine);
-			nextLine.setLength(0);
-    	}*/
-
 		// NOTE: need to increase size of squares being tested,because if test each individual dot then algorithm draws lines inside figures
 		// Use lowest level of points alone: produces more regular grid arrangement; using all points produces quincunx of 5 dots.
     	// Step 1: Determine each isogrid element's value by checking each set of surrounding screen grid elements' values.
@@ -669,7 +651,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
 						case 3 :	// Both lower squares filled, so draw from lower left top edge center to lower right top edge center
-									grphcs2D.drawLine(qtG[iRow+1][iCol].getX(), qtG[iRow+1][iCol].getY(), qtG[iRow+1][iCol+1].getX(), qtG[iRow+1][iCol+1].getY());
+									grphcs2D.drawLine(qtG[iCol][iRow+1].getX(), qtG[iCol][iRow+1].getY(), qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
@@ -684,7 +666,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
 						case 6 :	// Both right squares filled, so draw from upper right left edge center to lower right left edge center
-									grphcs2D.drawLine(qtG[iRow][iCol+1].getX(), qtG[iRow][iCol+1].getY(), qtG[iRow+1][iCol+1].getX(), qtG[iRow+1][iCol+1].getY());
+									grphcs2D.drawLine(qtG[iCol+1][iRow].getX(), qtG[iCol+1][iRow].getY(), qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
@@ -699,7 +681,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
 						case 9 :	// Both left squares filled, so draw from upper left right edge center to lower left right edge center
-									grphcs2D.drawLine(qtG[iRow][iCol].getX(), qtG[iRow][iCol].getY(), qtG[iRow+1][iCol].getX(), qtG[iRow+1][iCol].getY());
+									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol][iRow+1].getX(), qtG[iCol][iRow+1].getY());
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
@@ -714,7 +696,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
 						case 12 :	// Both upper squares filled, so draw from upper left bottom edge center to upper right bottom edge center
-									grphcs2D.drawLine(qtG[iRow][iCol].getX(), qtG[iRow][iCol].getY(), qtG[iRow][iCol+1].getX(), qtG[iRow][iCol+1].getY());
+									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol+1][iRow].getX(), qtG[iCol+1][iRow].getY());
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
@@ -805,19 +787,9 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			// Interpolate extra point between basic points
 			grphcs2D.fillRect((resultX - prvsX), (resultY - prvsY), 1, 1);
 
-			//System.out.println("frmlRplc: " + frmlRplc + ", resultX: " + resultX + ", resultY: " + resultY + ", prvsX: " + prvsX + ", prvsY: " + prvsY + ", slope(prvsX, prvsY, resultX, resultY): " + slope(prvsX, prvsY, resultX, resultY));
-
 			// Connect any gaps. Check test conditions either too lenient or too restrictive
 			if (solidLines) {
-				if ((prvsX != 0 && prvsY != 0) ||
-				((containsFunction(frmlRplc)) && (Double.isFinite(slope(prvsX, prvsY, resultX, resultY))))) {
-				//if ((prvsX != 0) && (prvsY != 0)
-				//&& (Double.isFinite(slope(prvsX, prvsY, resultX, resultY)))
-				//&& (slope(prvsX, prvsY, resultX, resultY) > Double.NEGATIVE_INFINITY)
-				//&& (slope(prvsX, prvsY, resultX, resultY) < Double.POSITIVE_INFINITY)
-				//&& (slope(prvsX, prvsY, resultX, resultY) < Double.MAX_VALUE)
-				//&& (slope(prvsX, prvsY, resultX, resultY) > Double.MIN_VALUE)
-				//&& (slope(prvsX, prvsY, resultX, resultY) > 0)) {
+				if ((prvsX != 0 && prvsY != 0) && (Math.abs(resultY - prvsY) < displaySize) && (Math.abs(resultX - prvsX) < displaySize)) {
 					grphcs2D.drawLine((int) (prvsX), (int) (prvsY), (int) (resultX), (int) (resultY));
 				}
 
