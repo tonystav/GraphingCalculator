@@ -439,7 +439,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
     private static void graphCartesianFunction(Graphics2D grphcs2D, String function) {
 		String frmNoEquals = "";
-		Integer gridSize = 201; // Accommodates quadtree total but maps plot storage to graph size
+		Integer gridSize = 401; // Accommodates quadtree total but maps plot storage to graph size
 		QTContent[][] qtG = new QTContent[gridSize][gridSize];
 
 		long startTime = System.currentTimeMillis();
@@ -456,7 +456,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		}
 
 		// 1. Use quadtree-style algorithm to populate array list of 2d coordinates & related equation results
-		quadtreeStylePlot(graphics2d, frmNoEquals, 0, graphCenter, graphCenter, qtG);
+		quadtreeStylePlot(graphics2d, frmNoEquals, 0, displaySize, displaySize, qtG);
 
 		// 2. Use marching squares algorithm to create graph from array list
 		marchingSquares(graphics2d, qtG);
@@ -473,6 +473,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		int nextLevel = 0, levelLimit = 7, newDivisor = 0, newAmount = 0, ulx =0, uly=0, urx=0, ury=0, llx=0, lly=0, lrx=0, lry=0;
 		double x=0D, y=0D, resultA = 0D;
 		Expression expression;
+		//System.out.println("level: " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate);
 
 		// Cartesian coordinates: test cases
 		// (((x^2) + (y^2) - 2)^3) / (x^2) = 4 // Horizontal Nephroid
@@ -501,6 +502,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// (x^4)+(y^4) = +-(3*x*(y^2)) // Bifoliate
 		// ((x^2)+(y^2))*(((x^2)+(y^2)+2*x)^2)-(9*((x^2)-(y^2))^2) = 0 // Scarabaeus curve
 		// y=x*cot(pi*x/.5) // Hippias' quadratic
+		// y=x*cot(x/.25) // Dinostratus quadratix
 		// (x^8)+(4*x^7)+(4*x^6*y^2)+(6*x^6)+(12*x^5*y^2)+(6*x^5)+(6*x^4*y^4)+(14*x^4*y^2)+(5*x^4)+(12*x^3*y^4)+(4*x^3*y^2)
 		// +(2*x^3)+(4*x^2*y^6)+(10*x^2*y^4)+(2*x^2*y^2)+(x^2)+(4*x*y^6)-(2*x*y^4)+(2*x*y^2)+(y^8)+(2*y^6)-(3*y^4)+(y^2)-(9) = 0 // Pear curve
 		// Upper/lower half only
@@ -515,6 +517,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// y^2 * (1+x) = x^2 * (3-x) // Maclaurin's Trisectrix
 		// abs(Gamma(y))=abs(Gamma(x)) // "Leaning Flower"
 		// (4*x^3)+(9*x*y^2)-(9*y^3)-(36*x)+(36*y) = 0 // "Almost yin/yang"
+		// x^2*y = (y-1)^3 // Cubical hyperbola
 		// Asymmetric
 		// ((x^3)*y) + ((y^3)*2) + (8*x) = 0 // Klein Quartic
 		// (2*(y^2)*((x^2)+(y^2))) - (2*(y^2)*(x+y)) + ((-26)*(y^2)) - (9*(x^2)) + (18*(x+y)) + 72 = 0 // Durer's Conchoid
@@ -528,8 +531,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// NOTE: May need to use "Math.abs" here, together with "+-" -> "-" replacement.
 		/*x = Math.abs(xCoordinate - graphCenter) / 100D;
 		y = Math.abs(graphCenter - yCoordinate) / 100D;*/
-		x = (xCoordinate - graphCenter) / 100D;
-		y = (graphCenter - yCoordinate) / 100D;
+		x = (xCoordinate - displaySize) / 100D;
+		y = (displaySize - yCoordinate) / 100D;
 
 		// Need 2 versions of replacement equation so as to compensate for any functions included in equation
 		if (containsFunction(function)) {
@@ -542,7 +545,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		}
 		expression = new Expression(frmlRplc);
 		resultA = expression.calculate();
-		System.out.println("point:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA);
+		//System.out.println("point:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA);
 
 		if ((0 >= resultA) && (Double.POSITIVE_INFINITY != resultA) && (Double.NEGATIVE_INFINITY != resultA)) {
 			//System.out.println("graphing:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA);
@@ -550,9 +553,9 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			// Store only points inside the curve perimeter: may not need anything else to graph curve
 			if (levelLimit == level) { // Maintains most of plot precision but accommodates plot storage as well
 				//qtG[xCoordinate/4][yCoordinate/4] = (new QTContent(xCoordinate, yCoordinate, resultA));
-				grphcs2D.fillRect((int) (xCoordinate), (int) (yCoordinate), 2, 2);
+				//grphcs2D.fillRect((int) (xCoordinate), (int) (yCoordinate), 2, 2);
 				// NOTE: This shrinks & centerizes plot, but need to expand internal grid in order to expand plot
-				//grphcs2D.fillRect((int) (graphCenter/2)+(xCoordinate/2), (int) (graphCenter/2)+(yCoordinate/2), 2, 2);
+				grphcs2D.fillRect((int) (xCoordinate/2), (int) (yCoordinate/2), 2, 2);
 			}
 		}
 
@@ -560,26 +563,29 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			// Calculate new values
 			nextLevel = level + 1;
 			newDivisor = (int) Math.pow(2D, nextLevel);
-			newAmount = graphCenter / newDivisor;
+			newAmount = displaySize / newDivisor;
 			//System.out.println("nextLevel: " + nextLevel + ", newDivisor: " + newDivisor + ", newAmount: " + newAmount);
+
 			// Process upper left quadrant
 			ulx = xCoordinate - newAmount; uly = yCoordinate - newAmount;
-			quadtreeStylePlot(grphcs2D, function, nextLevel, ulx, uly, qtG);//qtAL);
+			quadtreeStylePlot(grphcs2D, function, nextLevel, ulx, uly, qtG);
 			// Process upper right quadrant
 			urx = xCoordinate + newAmount; ury = yCoordinate - newAmount;
-			quadtreeStylePlot(grphcs2D, function, nextLevel, urx, ury, qtG);//qtAL);
+			quadtreeStylePlot(grphcs2D, function, nextLevel, urx, ury, qtG);
 			// Process lower left quadrant
 			llx = xCoordinate - newAmount; lly = yCoordinate + newAmount;
-			quadtreeStylePlot(grphcs2D, function, nextLevel, llx, lly, qtG);//qtAL);
+			quadtreeStylePlot(grphcs2D, function, nextLevel, llx, lly, qtG);
 			// Process lower right quadrant
 			lrx = xCoordinate + newAmount; lry = yCoordinate + newAmount;
-			quadtreeStylePlot(grphcs2D, function, nextLevel, lrx, lry, qtG);//qtAL);
+			quadtreeStylePlot(grphcs2D, function, nextLevel, lrx, lry, qtG);
 		}
 
 		// Store all visited points: may need everything so as to find curve perimeter
 		//if ((0 >= resultA) && (Double.POSITIVE_INFINITY != resultA) && (Double.NEGATIVE_INFINITY != resultA)) {
 			if (levelLimit == level) {
-				qtG[xCoordinate/4][yCoordinate/4] = (new QTContent(xCoordinate, yCoordinate, resultA));
+				//qtG[xCoordinate/4][yCoordinate/4] = (new QTContent(xCoordinate, yCoordinate, resultA));
+				// NOTE: This shrinks & centerizes plot, but need to expand internal grid in order to expand plot
+				qtG[xCoordinate/8][yCoordinate/8] = (new QTContent((xCoordinate/2), (yCoordinate/2), resultA));
 				//System.out.println("level: " + level + ", qtG:: x: " + xCoordinate/4 + ", y: " + yCoordinate/4 + ", QContent:: x: " + xCoordinate + ", y: " + yCoordinate);
 			}
 		//}
@@ -591,7 +597,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     	// Isogrid, which is 1 element smaller than screen grid. Each isogrid element is at center of 4 contiguous screen grid elements,
     	// and holds 1 of 16 values, computed based on result value of each surrounding screen grid element. (ex. if only bottom right's
     	// value >= 0 then isogrid value = 2, if only bottom right's value < 0 then isogrid value = 13)
-    	Integer[][] msGrid = new Integer[199][199];
+    	Integer[][] msGrid = new Integer[399][399];
 
     	// Initialize isogrid
 		for (int row = 0; row < msGrid.length; row++) {
@@ -604,8 +610,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// Use lowest level of points alone: produces more regular grid arrangement; using all points produces quincunx of 5 dots.
     	// Step 1: Determine each isogrid element's value by checking each set of surrounding screen grid elements' values.
 		// Start from upper left, then move clockwise through upper right, then lower right, finally to lower left.
-		for (int iRow = 0; iRow < 197; iRow++) {
-    		for (int iCol = 0; iCol < 197; iCol++) {
+		for (int iRow = 0; iRow < 397; iRow++) {
+    		for (int iCol = 0; iCol < 397; iCol++) {
     			try {
 	    			if ((null != qtG[iRow][iCol].getResult())		&& (0>= qtG[iRow][iCol].getResult()))		{ msGrid[iRow][iCol] += 8; }	// Upper left screen grid element
 	    			if ((null != qtG[iRow][iCol+3].getResult())		&& (0>= qtG[iRow][iCol+3].getResult()))		{ msGrid[iRow][iCol] += 4; }	// Upper right screen grid element
@@ -617,26 +623,12 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     			}
 	    	}
 		}
-		// Original loop: produces lines inside shapes as well as outside
-    	/*for (int iRow = 0; iRow < 199; iRow++) {
-    		for (int iCol = 0; iCol < 199; iCol++) {
-    			try {
-	    			if ((null != qtG[iRow][iCol].getResult())		&& (0>= qtG[iRow][iCol].getResult()))		{ msGrid[iRow][iCol] += 8; }	// Upper left screen grid element
-	    			if ((null != qtG[iRow][iCol+1].getResult())		&& (0>= qtG[iRow][iCol+1].getResult()))		{ msGrid[iRow][iCol] += 4; }	// Upper right screen grid element
-	    			if ((null != qtG[iRow+1][iCol+1].getResult())	&& (0>= qtG[iRow+1][iCol+1].getResult()))	{ msGrid[iRow][iCol] += 2; }	// Lower right screen grid element
-	    			if ((null != qtG[iRow+1][iCol].getResult())		&& (0>= qtG[iRow+1][iCol].getResult()))		{ msGrid[iRow][iCol] += 1; }	// Lower left screen grid element
-	    		}
-    			catch (NullPointerException npe) {
-    				continue;	// Should be able to ignore nulls
-    			}
-	    	}
-		}*/
 
 		// Step 2: Match each isogrid element's value with appropriate case value, then draw the correct lines.
     	// NOTE: Instead of 1 line between screen points, check if can add extra point between them for more
     	// precision. Need to determine new point location: usually not on same straight line between start & end.
-    	for (int iRow = 0; iRow < 199; iRow++) {
-    		for (int iCol = 0; iCol < 199; iCol++) {
+    	for (int iRow = 0; iRow < 399; iRow++) {
+    		for (int iCol = 0; iCol < 399; iCol++) {
     			try {
 	    			switch (msGrid[iCol][iRow]) {
 						case 0 :	break;	// All squares empty, so do nothing
@@ -825,6 +817,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// r=+-(4*cot(theta/2))^.5 // Serpentine curve
 		// r=3*cos((4*theta)-(5*pi/18))+(3*0.07*sin(80*theta)) // Jagged leaved flower
 		// r=(sin(theta) + sin(2.5*theta)^3)*4 // Scallop shell
+		// r=2*(1+e*cos(pi*theta)) // Cyclic harmonic
 		// Determine if equation has fixed value & which side of equation has that value.
 		if ("r".equalsIgnoreCase(StringUtils.substringBefore(frml, "="))) {
 			frmlNoEquals = StringUtils.substringAfter(frml, "=");
@@ -891,6 +884,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// x=((1*cos(z)) / (cos(z) - sin(z))) + 3*cos(z) ; y = 3*sin(z) // Durer's Conchoid
 		// x=cos(z)+(cos(12*z)/4)-(sin(-28*z)/9) ; y=sin(z)+(sin(12*z)/4)+(cos(-28*z)/9) // Complex Spirograph ring
 		// x=2*cos(z)-2*cos(pi*z); y=2*sin(z)-2*sin(pi*z) // Complex Epicycloid
+		// x=2.5*cos(z) ; y=2.5*sin(z)^3 // "Puckered lips"
 		// x=sin(z)* ((e^cos(z)) - (2*cos(4*z)) - (sin(z/12))^5) ; y=cos(z)* ((e^cos(z)) - (2*cos(4*z)) - (sin(z/12))^5) // Complex butterfly
 		if ((StringUtils.countMatches(frml, "=") != 2)) {
 			// Popup warning
