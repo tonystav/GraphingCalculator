@@ -439,7 +439,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
     private static void graphCartesianFunction(Graphics2D grphcs2D, String function) {
 		String frmNoEquals = "";
-		Integer gridSize = 401; // Accommodates quadtree total but maps plot storage to graph size
+		Integer gridSize = graphCenter+1; // Accommodates quadtree total but maps plot storage to graph size
 		QTContent[][] qtG = new QTContent[gridSize][gridSize];
 
 		long startTime = System.currentTimeMillis();
@@ -482,9 +482,9 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// (((x^2) + (y^2))^2) = 4 * ((y^2) - (x^2)) // Vertical Lemniscate
 		// (y^2) - (x^2) = 5 // Horizontal Hyperbola
 		// (x^2) - (y^2) = 5 // Vertical Hyperbola
-		// (x^2) + (y^2) = 5 // Circle
+		// (x^2) + (y^2) = 20 // Circle
 		// ((x^2) ^ 4) + ((y^2) ^ 4) = 7 // Rectircle (round-cornered square)
-		// abs(x+y) + abs(x-y) = 5 // Square
+		// abs(x+y) + abs(x-y) = 10 // Square
 		// abs(abs(x)-abs(y)) = 2 // X sign / 2-directional v shapes (corners pointing inward)
 		// abs(abs(x + y) - abs(x - y)) = 2 // Plus sign / Inverted square (corners pointing inward)
 		// abs(x+y) * abs(x-y) = 2 // 2-directional hyperbolic shapes
@@ -594,10 +594,11 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     private static void marchingSquares(Graphics2D grphcs2D, QTContent[][] qtG) {
     	QTContent nextQTC = new QTContent(0, 0, 0D);
     	StringBuilder nextLine = new StringBuilder();
+    	int xBetween = 0, yBetween = 0;
     	// Isogrid, which is 1 element smaller than screen grid. Each isogrid element is at center of 4 contiguous screen grid elements,
     	// and holds 1 of 16 values, computed based on result value of each surrounding screen grid element. (ex. if only bottom right's
     	// value >= 0 then isogrid value = 2, if only bottom right's value < 0 then isogrid value = 13)
-    	Integer[][] msGrid = new Integer[399][399];
+    	Integer[][] msGrid = new Integer[graphCenter-1][graphCenter-1];
 
     	// Initialize isogrid
 		for (int row = 0; row < msGrid.length; row++) {
@@ -610,8 +611,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// Use lowest level of points alone: produces more regular grid arrangement; using all points produces quincunx of 5 dots.
     	// Step 1: Determine each isogrid element's value by checking each set of surrounding screen grid elements' values.
 		// Start from upper left, then move clockwise through upper right, then lower right, finally to lower left.
-		for (int iRow = 0; iRow < 397; iRow++) {
-    		for (int iCol = 0; iCol < 397; iCol++) {
+		for (int iRow = 0; iRow < graphCenter-3; iRow++) {
+    		for (int iCol = 0; iCol < graphCenter-3; iCol++) {
     			try {
 	    			if ((null != qtG[iRow][iCol].getResult())		&& (0>= qtG[iRow][iCol].getResult()))		{ msGrid[iRow][iCol] += 8; }	// Upper left screen grid element
 	    			if ((null != qtG[iRow][iCol+3].getResult())		&& (0>= qtG[iRow][iCol+3].getResult()))		{ msGrid[iRow][iCol] += 4; }	// Upper right screen grid element
@@ -627,12 +628,15 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// Step 2: Match each isogrid element's value with appropriate case value, then draw the correct lines.
     	// NOTE: Instead of 1 line between screen points, check if can add extra point between them for more
     	// precision. Need to determine new point location: usually not on same straight line between start & end.
-    	for (int iRow = 0; iRow < 399; iRow++) {
-    		for (int iCol = 0; iCol < 399; iCol++) {
+    	for (int iRow = 0; iRow < graphCenter-1; iRow++) {
+    		for (int iCol = 0; iCol < graphCenter-1; iCol++) {
     			try {
 	    			switch (msGrid[iCol][iRow]) {
 						case 0 :	break;	// All squares empty, so do nothing
 						case 1 :	// Lower left square filled, so draw from lower left top edge center to lower left right edge center
+									/*xBetween = Math.abs(qtG[iCol][iRow].getX() - qtG[iCol+1][iRow+1].getX()); yBetween = Math.abs(qtG[iCol][iRow].getY() - qtG[iCol+1][iRow+1].getY());
+									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol][iRow].getX()+xBetween, qtG[iCol][iRow].getY()+yBetween);
+									grphcs2D.drawLine(qtG[iCol][iRow].getX()+xBetween, qtG[iCol][iRow].getY()+yBetween, qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());*/
 									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());
 									//grphcs2D.drawLine(x1, y1, x1.5, y1.5);
 									//grphcs2D.drawLine(x1.5, y1.5, x2, y2);
@@ -643,7 +647,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
 						case 3 :	// Both lower squares filled, so draw from lower left top edge center to lower right top edge center
-									grphcs2D.drawLine(qtG[iCol][iRow+1].getX(), qtG[iCol][iRow+1].getY(), qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());
+									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol][iRow+1].getX(), qtG[iCol][iRow+1].getY());
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
@@ -658,7 +662,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
 						case 6 :	// Both right squares filled, so draw from upper right left edge center to lower right left edge center
-									grphcs2D.drawLine(qtG[iCol+1][iRow].getX(), qtG[iCol+1][iRow].getY(), qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());
+									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol+1][iRow].getX(), qtG[iCol+1][iRow].getY());
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
@@ -673,7 +677,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
 						case 9 :	// Both left squares filled, so draw from upper left right edge center to lower left right edge center
-									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol][iRow+1].getX(), qtG[iCol][iRow+1].getY());
+									grphcs2D.drawLine(qtG[iCol][iRow+1].getX(), qtG[iCol][iRow+1].getY(), qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
@@ -688,7 +692,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
 						case 12 :	// Both upper squares filled, so draw from upper left bottom edge center to upper right bottom edge center
-									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol+1][iRow].getX(), qtG[iCol+1][iRow].getY());
+									grphcs2D.drawLine(qtG[iCol+1][iRow].getX(), qtG[iCol+1][iRow].getY(), qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									//grphcs2D.drawLine(x1, y1, x2, y2);
 									break;
