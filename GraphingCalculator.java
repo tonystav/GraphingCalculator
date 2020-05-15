@@ -16,6 +16,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
+import java.awt.geom.QuadCurve2D;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -442,7 +443,16 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		Integer gridSize = graphCenter+1; // Accommodates quadtree total but maps plot storage to graph size
 		QTGrid qtG = new QTGrid(gridSize);
 
+		System.out.println("EQUATION: " + function);
+
 		long startTime = System.currentTimeMillis();
+
+    	// Initialize grid
+		/*for (int row = 0; row < gridSize; row++) {
+		    for (int col = 0; col < gridSize; col++) {
+		    	qtG.initializeGridElement(row, col);
+		    }
+		}*/
 
 		// String processing on equation occurs outside of Cartesian processing because quadtree algorithm is recursive
 		if (StringUtils.isNumeric(StringUtils.substringBefore(function, "="))) {
@@ -470,7 +480,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     // calculate new coordinates & next level, then call same method with new parameters for each quadrant (recursion)
     private static void quadtreeStylePlot(Graphics2D grphcs2D, String function, int level, int xCoordinate, int yCoordinate, QTGrid qtG) {
 		String frmlRplc = "";
-		int nextLevel = 0, levelLimit = 7, newDivisor = 0, newAmount = 0, ulx =0, uly=0, urx=0, ury=0, llx=0, lly=0, lrx=0, lry=0;
+		int nextLevel = 0, levelLimit = 8, newDivisor = 0, newAmount = 0, ulx =0, uly=0, urx=0, ury=0, llx=0, lly=0, lrx=0, lry=0;
 		double x=0D, y=0D, resultA = 0D;
 		Expression expression;
 		//System.out.println("level: " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate);
@@ -529,32 +539,25 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		//try { TimeUnit.MILLISECONDS.sleep(250); } catch (InterruptedException e) { e.printStackTrace(); }
 
 		// NOTE: May need to use "Math.abs" here, together with "+-" -> "-" replacement.
-		/*x = Math.abs(xCoordinate - graphCenter) / 100D;
-		y = Math.abs(graphCenter - yCoordinate) / 100D;*/
 		x = (xCoordinate - displaySize) / 100D;
 		y = (displaySize - yCoordinate) / 100D;
 
 		// Need 2 versions of replacement equation so as to compensate for any functions included in equation
 		if (containsFunction(function)) {
 			frmlRplc = function.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
-							.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("\\+-", "\\+");
+						.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("\\+-", "\\+");
 		}
 		else {
 			frmlRplc = function.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
-					.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("\\+-", "\\-");
+						.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("\\+-", "\\-");
 		}
 		expression = new Expression(frmlRplc);
 		resultA = expression.calculate();
 		//System.out.println("point:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA);
 
-		if ((0 >= resultA) && (Double.POSITIVE_INFINITY != resultA) && (Double.NEGATIVE_INFINITY != resultA)) {
+		if ((0 >= resultA)) {// && (Double.POSITIVE_INFINITY != resultA) && (Double.NEGATIVE_INFINITY != resultA)) {
 			//System.out.println("graphing:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA);
-
-			// Store only points inside the curve perimeter: may not need anything else to graph curve
 			if (levelLimit == level) { // Maintains most of plot precision but accommodates plot storage as well
-				//qtG[xCoordinate/4][yCoordinate/4] = (new QTContent(xCoordinate, yCoordinate, resultA));
-				//grphcs2D.fillRect((int) (xCoordinate), (int) (yCoordinate), 2, 2);
-				// NOTE: This shrinks & centerizes plot, but need to expand internal grid in order to expand plot
 				grphcs2D.fillRect((int) (xCoordinate/2), (int) (yCoordinate/2), 2, 2);
 			}
 		}
@@ -583,10 +586,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// Store all visited points: may need everything so as to find curve perimeter
 		//if ((0 >= resultA) && (Double.POSITIVE_INFINITY != resultA) && (Double.NEGATIVE_INFINITY != resultA)) {
 			if (levelLimit == level) {
-				//qtG[xCoordinate/4][yCoordinate/4] = (new QTContent(xCoordinate, yCoordinate, resultA));
-				// NOTE: This shrinks & centerizes plot, but need to expand internal grid in order to expand plot
-				//qtG[xCoordinate/8][yCoordinate/8] = (new QTContent((xCoordinate/2), (yCoordinate/2), resultA));
-				qtG.setGridElement(xCoordinate/8, yCoordinate/8, xCoordinate/2, yCoordinate/2, resultA);
+				qtG.setGridElement((xCoordinate/8)+1, (yCoordinate/8)+1, xCoordinate/2, yCoordinate/2, resultA);
 				//System.out.println("level: " + level + ", qtG:: x: " + xCoordinate/4 + ", y: " + yCoordinate/4 + ", QContent:: x: " + xCoordinate + ", y: " + yCoordinate);
 			}
 		//}
@@ -610,12 +610,12 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 		// Simple nested loop to test if values are being transferred and used properly.
     	// See if can use quadtree-style approach here also (maybe not?)
-    	for (int i = 0; i < 200; i++) {
-    		for (int j = 0; j < 200; j++) {
+    	for (int i = 0; i < graphCenter; i++) {
+    		for (int j = 0; j < graphCenter; j++) {
     			//nextQTC = qtG[j][i];
     			nextQTC = qtG.getGridElement(j, i);
         		// This proves that the grid is available & readable: it simply plots the same image as created previously
-    			if ((null != nextQTC) && (0>= nextQTC.getResult())) {
+    			if ((null != nextQTC) && (0 >= nextQTC.getResult())) {
     				grphcs2D.fillRect((int) (nextQTC.getX()), (int) (nextQTC.getY()), 2, 2);
 
     				nextLine.append('X');
@@ -631,33 +631,35 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// Use lowest level of points alone: produces more regular grid arrangement; using all points produces quincunx of 5 dots.
     	// Step 1: Determine each isogrid element's value by checking each set of surrounding screen grid elements' values.
 		// Start from upper left, then move clockwise through upper right, then lower right, finally to lower left.
-		// Original nested loop
-		for (int iRow = 0; iRow < graphCenter-3; iRow++) {
-    		for (int iCol = 0; iCol < graphCenter-3; iCol++) {
+		nextLine.setLength(0);
+
+		for (int iRow = 0; iRow < graphCenter; iRow++) {
+    		for (int iCol = 0; iCol < graphCenter; iCol++) {
     			try {
-	    			/*if ((null != qtG[iRow][iCol].getResult())		&& (0 > qtG[iRow][iCol].getResult()))		{ msGrid[iRow][iCol] += 8; }	// Upper left screen grid element
-	    			if ((null != qtG[iRow][iCol+3].getResult())		&& (0 > qtG[iRow][iCol+3].getResult()))		{ msGrid[iRow][iCol] += 4; }	// Upper right screen grid element
-	    			if ((null != qtG[iRow+3][iCol+3].getResult())	&& (0 > qtG[iRow+3][iCol+3].getResult()))	{ msGrid[iRow][iCol] += 2; }	// Lower right screen grid element
-	    			if ((null != qtG[iRow+3][iCol].getResult())		&& (0 > qtG[iRow+3][iCol].getResult()))		{ msGrid[iRow][iCol] += 1; }	// Lower left screen grid element
-	    			*/
-	    			if ((null != qtG.getGridElement(iRow, iCol).getResult())		&& (0 > qtG.getGridElement(iRow, iCol).getResult()))		{ msGrid[iRow][iCol] += 8; }	// Upper left screen grid element
-	    			if ((null != qtG.getGridElement(iRow, iCol+3).getResult())		&& (0 > qtG.getGridElement(iRow, iCol+3).getResult()))		{ msGrid[iRow][iCol] += 4; }	// Upper right screen grid element
-	    			if ((null != qtG.getGridElement(iRow+3, iCol+3).getResult())	&& (0 > qtG.getGridElement(iRow+3, iCol+3).getResult()))	{ msGrid[iRow][iCol] += 2; }	// Lower right screen grid element
-	    			if ((null != qtG.getGridElement(iRow+3, iCol).getResult())		&& (0 > qtG.getGridElement(iRow+3, iCol).getResult()))		{ msGrid[iRow][iCol] += 1; }	// Lower left screen grid element
-	    			
-	    		}
+    				// Original nested loop instructions
+					if ((null != qtG.getGridElement(iRow, iCol).getResult())		&& (0 > qtG.getGridElement(iRow, iCol).getResult()))	{ msGrid[iRow][iCol] += 8; }	// Upper left screen grid element
+					if ((null != qtG.getGridElement(iRow, iCol+1).getResult())		&& (0 > qtG.getGridElement(iRow, iCol+1).getResult()))	{ msGrid[iRow][iCol] += 4; }	// Upper right screen grid element
+					if ((null != qtG.getGridElement(iRow+1, iCol+1).getResult())	&& (0 > qtG.getGridElement(iRow+1, iCol+1).getResult()))	{ msGrid[iRow][iCol] += 2; }	// Lower right screen grid element
+					if ((null != qtG.getGridElement(iRow+1, iCol).getResult())		&& (0 > qtG.getGridElement(iRow+1, iCol).getResult()))	{ msGrid[iRow][iCol] += 1; }	// Lower left screen grid element
+    			}
     			catch (NullPointerException npe) {
     				continue;	// Should be able to ignore nulls
     			}
-    			if (0 < msGrid[iRow][iCol]) {System.out.println("msGrid[" + iRow + "][" + iCol + "]: " + msGrid[iRow][iCol]);}
+
+    			if (0 < msGrid[iRow][iCol]) { nextLine.append(msGrid[iRow][iCol]); }
+    			else { nextLine.append('_'); }
+				nextLine.append(' ');
 	    	}
+
+			System.out.println(nextLine);
+			nextLine.setLength(0);
 		}
 
 		// Step 2: Match each isogrid element's value with appropriate case value, then draw the correct lines.
     	// NOTE: Instead of 1 line between screen points, check if can add extra point between them for more
     	// precision. Need to determine new point location: usually not on same straight line between start & end.
-    	for (int iRow = 0; iRow < graphCenter-1; iRow++) {
-    		for (int iCol = 0; iCol < graphCenter-1; iCol++) {
+    	for (int iRow = 1; iRow < graphCenter-1; iRow++) {
+    		for (int iCol = 1; iCol < graphCenter-1; iCol++) {
     			try {
 	    			switch (msGrid[iCol][iRow]) {
 						case 0 :	break;	// All squares empty, so do nothing
@@ -665,74 +667,48 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 									/*xBetween = Math.abs(qtG[iCol][iRow].getX() - qtG[iCol+1][iRow+1].getX()); yBetween = Math.abs(qtG[iCol][iRow].getY() - qtG[iCol+1][iRow+1].getY());
 									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol][iRow].getX()+xBetween, qtG[iCol][iRow].getY()+yBetween);
 									grphcs2D.drawLine(qtG[iCol][iRow].getX()+xBetween, qtG[iCol][iRow].getY()+yBetween, qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());*/
-									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX()+2, qtG.getGridElement(iCol, iRow).getY()+2, qtG.getGridElement(iCol+1, iRow+1).getX()+2, qtG.getGridElement(iCol+1, iRow+1).getY()+2);
-									//grphcs2D.drawLine(x1, y1, x1.5, y1.5);
-									//grphcs2D.drawLine(x1.5, y1.5, x2, y2);
+									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
+									//QuadCurve2D qc2d = new QuadCurve2D(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), cx, cy, qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
+									//grphcs2D.draw(qc2d);
 									break;
 						case 2 :	// Lower right square filled, so draw from lower right top edge center to lower right left edge center
-									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX()+2, qtG.getGridElement(iCol, iRow+1).getY()+2, qtG.getGridElement(iCol+1, iRow).getX()+2, qtG.getGridElement(iCol+1, iRow).getY()+2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
+									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
 									break;
 						case 3 :	// Both lower squares filled, so draw from lower left top edge center to lower right top edge center
-									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX()+2, qtG.getGridElement(iCol, iRow).getY()+2, qtG.getGridElement(iCol, iRow+1).getX()+2, qtG.getGridElement(iCol, iRow+1).getY()+2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
+									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY());
 									break;
 						case 4 :	// Upper right square filled, so draw from upper right left edge center to upper right bottom edge center
-									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX()+2, qtG.getGridElement(iCol, iRow).getY()+2, qtG.getGridElement(iCol+1, iRow+1).getX()+2, qtG.getGridElement(iCol+1, iRow+1).getY()+2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
+									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
 									break;
 						case 5 :	// Upper right & lower left filled, which is ambiguous, so need to check if squares somehow connect
-									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX()+2, qtG.getGridElement(iCol, iRow+1).getY()+2, qtG.getGridElement(iCol+1, iRow).getX()+2, qtG.getGridElement(iCol+1, iRow).getY()+2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
+									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
 									break;
 						case 6 :	// Both right squares filled, so draw from upper right left edge center to lower right left edge center
-									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX()+2, qtG.getGridElement(iCol, iRow).getY()+2, qtG.getGridElement(iCol+1, iRow).getX()+2, qtG.getGridElement(iCol+1, iRow).getY()+2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
+									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
 									break;
 						case 7 :	// Upper left square empty, so draw from upper right left edge center to lower left top edge center
-									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX()+2, qtG.getGridElement(iCol, iRow+1).getY()+2, qtG.getGridElement(iCol+1, iRow).getX()+2, qtG.getGridElement(iCol+1, iRow).getY()+2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
+									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
 									break;
 						case 8 :	// Upper left square filled, so draw from upper left bottom edge center to upper left right edge center
-									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX()+2, qtG.getGridElement(iCol, iRow+1).getY()+2, qtG.getGridElement(iCol+1, iRow).getX()+2, qtG.getGridElement(iCol+1, iRow).getY()+2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
+									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
 									break;
 						case 9 :	// Both left squares filled, so draw from upper left right edge center to lower left right edge center
-									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX()+2, qtG.getGridElement(iCol, iRow+1).getY()+2, qtG.getGridElement(iCol+1, iRow+1).getX()+2, qtG.getGridElement(iCol+1, iRow+1).getY()+2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
+									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
 									break;
 						case 10 :	// Upper left & lower right filled, which is ambiguous, so need to check if squares somehow connect
-									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX()+2, qtG.getGridElement(iCol, iRow).getY()+2, qtG.getGridElement(iCol+1, iRow+1).getX()+2, qtG.getGridElement(iCol+1, iRow+1).getY()+2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
+									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
 									break;
 						case 11 :	// Upper right square empty, so draw from upper left right edge center to lower right top edge center
-									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX()+2, qtG.getGridElement(iCol, iRow).getY()+2, qtG.getGridElement(iCol+1, iRow+1).getX()+2, qtG.getGridElement(iCol+1, iRow+1).getY()+2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
+									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
 									break;
 						case 12 :	// Both upper squares filled, so draw from upper left bottom edge center to upper right bottom edge center
-									grphcs2D.drawLine(qtG.getGridElement(iCol+1, iRow).getX()+2, qtG.getGridElement(iCol+1, iRow).getY()+2, qtG.getGridElement(iCol+1, iRow+1).getX()+2, qtG.getGridElement(iCol+1, iRow+1).getY()+2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
+									grphcs2D.drawLine(qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
 									break;
 						case 13 :	// Lower right square empty, so draw from lower left right edge center to upper right left edge center
-									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX()+2, qtG.getGridElement(iCol, iRow+1).getY()+2, qtG.getGridElement(iCol+1, iRow).getX()+2, qtG.getGridElement(iCol+1, iRow).getY()+2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
+									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
 									break;
 						case 14 :	// Lower left square empty, so draw from upper left bottom edge center to lower right left edge center
-									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX()+2, qtG.getGridElement(iCol, iRow).getY()+2, qtG.getGridElement(iCol+1, iRow+1).getX()+2, qtG.getGridElement(iCol+1, iRow+1).getY()+2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
-									//grphcs2D.drawLine(x1, y1, x2, y2);
+									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
 									break;
 						case 15 :	break;	// All squares filled, so do nothing
 	    			}
@@ -763,8 +739,11 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		Expression expression;
 
     	// 1-parameter equation: 'y=f(x)', 'x=f(y)'
+		// asin(sin(x)) or asin(cos(x))
 		// +/-(1-(x^2))^.5 // Circle
 		// sgn(tan(x)-cot(x)) // 2 parallel dashed lines
+		// sgn(cos(x)) or sgn(sin(x)) // Square wave
+		// +/-sgn(Gamma(x)) // Square wave when x < 0, 1/-1 when x > 0
 
 		for (float i=-graphCenter*10; i<=graphCenter*10; i++) {
 			float fi = i / 100;
