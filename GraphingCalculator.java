@@ -439,12 +439,11 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     }
 
     private static void graphCartesianFunction(Graphics2D grphcs2D, String function) {
-		String frmNoEquals = "";
+		String leftEquation = "", rightEquation = "", xEquation = "", yEquation = "", frmNoEquals = "";
 		Integer gridSize = graphCenter+1; // Accommodates quadtree total but maps plot storage to graph size
 		QTGrid qtG = new QTGrid(gridSize);
 
-		System.out.println("EQUATION: " + function);
-
+		System.out.println("function: " + function);
 		long startTime = System.currentTimeMillis();
 
     	// Initialize grid
@@ -455,15 +454,47 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		}*/
 
 		// String processing on equation occurs outside of Cartesian processing because quadtree algorithm is recursive
-		if (StringUtils.isNumeric(StringUtils.substringBefore(function, "="))) {
+/*		if (StringUtils.isNumeric(StringUtils.substringBefore(function, "="))) {
+			System.out.println("1");
 			frmNoEquals = "(" + StringUtils.substringAfter(function, "=") + ") - (" + StringUtils.substringBefore(function, "=") + ")";
 		}
 		else if (StringUtils.isNumeric(StringUtils.substringAfter(function, "="))) {
+			System.out.println("2");
 			frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
 		}
 		else {
-			frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
-		}
+			System.out.println("3");
+			//frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
+*/
+			function = function.replaceAll(" ", "");
+			// Store each equation separately
+			leftEquation = StringUtils.substringBefore(function, "=");
+			rightEquation = StringUtils.substringAfter(function, "=");
+
+			// Determine signs left & right equations, then rearrange into single equation. Replace
+			// double negative (subtraction of negative) with addition of positive (mathematically equivalent)
+
+			// Negatives on both sides, so replace both & move right side to left
+			if ((isExpressionNegative(leftEquation)) && (isExpressionNegative(rightEquation))) {
+				frmNoEquals = ("(" + reverseExpressionSign(StringUtils.substringBefore(function, "=")) + ") - ("
+						+ reverseExpressionSign(StringUtils.substringAfter(function, "=")) + ")");
+			}
+			// Left side negative, so reverse sign & append to right side
+			else if (isExpressionNegative(leftEquation)) {
+				frmNoEquals = ("(" + StringUtils.substringAfter(function, "=") + ") + ("
+							+ reverseExpressionSign(StringUtils.substringBefore(function, "=")) + ")");
+			}
+			// Right side negative, so reverse sign & append to left side
+			else if (isExpressionNegative(rightEquation)) {
+				frmNoEquals = ("(" + StringUtils.substringBefore(function, "=") + ") + ("
+							+ reverseExpressionSign(StringUtils.substringAfter(function, "=")) + ")");
+			}
+			// Neither side negative, so append right side, as negative, to left side
+			else {
+				frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
+			}
+//		}
+		System.out.println("frmNoEquals: " + frmNoEquals);
 
 		// 1. Use quadtree-style algorithm to populate array list of 2d coordinates & related equation results
 		quadtreeStylePlot(graphics2d, frmNoEquals, 0, displaySize, displaySize, qtG);
@@ -551,11 +582,12 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			frmlRplc = function.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
 						.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("\\+-", "\\-");
 		}
+		//System.out.println("frmlRplc: " + frmlRplc);
 		expression = new Expression(frmlRplc);
 		resultA = expression.calculate();
 		//System.out.println("point:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA);
 
-		if ((0 >= resultA)) {// && (Double.POSITIVE_INFINITY != resultA) && (Double.NEGATIVE_INFINITY != resultA)) {
+		if ((0 > resultA)) {
 			//System.out.println("graphing:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA);
 			if (levelLimit == level) { // Maintains most of plot precision but accommodates plot storage as well
 				grphcs2D.fillRect((int) (xCoordinate/2), (int) (yCoordinate/2), 2, 2);
@@ -584,18 +616,16 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		}
 
 		// Store all visited points: may need everything so as to find curve perimeter
-		//if ((0 >= resultA) && (Double.POSITIVE_INFINITY != resultA) && (Double.NEGATIVE_INFINITY != resultA)) {
-			if (levelLimit == level) {
-				qtG.setGridElement((xCoordinate/8)+1, (yCoordinate/8)+1, xCoordinate/2, yCoordinate/2, resultA);
-				//System.out.println("level: " + level + ", qtG:: x: " + xCoordinate/4 + ", y: " + yCoordinate/4 + ", QContent:: x: " + xCoordinate + ", y: " + yCoordinate);
-			}
-		//}
+		if (levelLimit == level) {
+			qtG.setGridElement((xCoordinate/8)+1, (yCoordinate/8)+1, xCoordinate/2, yCoordinate/2, resultA);
+			//System.out.println("level: " + level + ", qtG:: x: " + xCoordinate/4 + ", y: " + yCoordinate/4 + ", QContent:: x: " + xCoordinate + ", y: " + yCoordinate + ", resultA: " + resultA);
+		}
     }
 
     private static void marchingSquares(Graphics2D grphcs2D, QTGrid qtG) {
     	QTContent nextQTC = new QTContent(0, 0, 0D);
     	StringBuilder nextLine = new StringBuilder();
-    	int xBetween = 0, yBetween = 0;
+    	//int xBetween = 0, yBetween = 0;
     	// Isogrid, which is 1 element smaller than screen grid. Each isogrid element is at center of 4 contiguous screen grid elements,
     	// and holds 1 of 16 values, computed based on result value of each surrounding screen grid element. (ex. if only bottom right's
     	// value >= 0 then isogrid value = 2, if only bottom right's value < 0 then isogrid value = 13)
@@ -610,7 +640,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 		// Simple nested loop to test if values are being transferred and used properly.
     	// See if can use quadtree-style approach here also (maybe not?)
-    	for (int i = 0; i < graphCenter; i++) {
+    	/*for (int i = 0; i < graphCenter; i++) {
     		for (int j = 0; j < graphCenter; j++) {
     			//nextQTC = qtG[j][i];
     			nextQTC = qtG.getGridElement(j, i);
@@ -625,10 +655,11 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 			System.out.println(nextLine);
 			nextLine.setLength(0);
-    	}
+    	}*/
 
 		// NOTE: need to increase size of squares being tested,because if test each individual dot then algorithm draws lines inside figures
 		// Use lowest level of points alone: produces more regular grid arrangement; using all points produces quincunx of 5 dots.
+
     	// Step 1: Determine each isogrid element's value by checking each set of surrounding screen grid elements' values.
 		// Start from upper left, then move clockwise through upper right, then lower right, finally to lower left.
 		nextLine.setLength(0);
@@ -637,22 +668,26 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     		for (int iCol = 0; iCol < graphCenter; iCol++) {
     			try {
     				// Original nested loop instructions
-					if ((null != qtG.getGridElement(iRow, iCol).getResult())		&& (0 > qtG.getGridElement(iRow, iCol).getResult()))	{ msGrid[iRow][iCol] += 8; }	// Upper left screen grid element
-					if ((null != qtG.getGridElement(iRow, iCol+1).getResult())		&& (0 > qtG.getGridElement(iRow, iCol+1).getResult()))	{ msGrid[iRow][iCol] += 4; }	// Upper right screen grid element
+					/*if ((null != qtG.getGridElement(iRow, iCol).getResult())		&& (0 > qtG.getGridElement(iRow, iCol).getResult()))		{ msGrid[iRow][iCol] += 8; }	// Upper left screen grid element
+					if ((null != qtG.getGridElement(iRow, iCol+1).getResult())		&& (0 > qtG.getGridElement(iRow, iCol+1).getResult()))		{ msGrid[iRow][iCol] += 4; }	// Upper right screen grid element
 					if ((null != qtG.getGridElement(iRow+1, iCol+1).getResult())	&& (0 > qtG.getGridElement(iRow+1, iCol+1).getResult()))	{ msGrid[iRow][iCol] += 2; }	// Lower right screen grid element
-					if ((null != qtG.getGridElement(iRow+1, iCol).getResult())		&& (0 > qtG.getGridElement(iRow+1, iCol).getResult()))	{ msGrid[iRow][iCol] += 1; }	// Lower left screen grid element
+					if ((null != qtG.getGridElement(iRow+1, iCol).getResult())		&& (0 > qtG.getGridElement(iRow+1, iCol).getResult()))		{ msGrid[iRow][iCol] += 1; }	// Lower left screen grid element
+					*/
+					if ((0 > qtG.getGridElement(iRow, iCol).getResult()))		{ msGrid[iRow][iCol] += 8; }	// Upper left screen grid element
+					if ((0 > qtG.getGridElement(iRow, iCol+1).getResult()))		{ msGrid[iRow][iCol] += 4; }	// Upper right screen grid element
+					if ((0 > qtG.getGridElement(iRow+1, iCol+1).getResult()))	{ msGrid[iRow][iCol] += 2; }	// Lower right screen grid element
+					if ((0 > qtG.getGridElement(iRow+1, iCol).getResult()))		{ msGrid[iRow][iCol] += 1; }	// Lower left screen grid element
     			}
     			catch (NullPointerException npe) {
     				continue;	// Should be able to ignore nulls
     			}
 
-    			if (0 < msGrid[iRow][iCol]) { nextLine.append(msGrid[iRow][iCol]); }
-    			else { nextLine.append('_'); }
-				nextLine.append(' ');
+    			//nextLine.append(String.format("%02d", msGrid[iRow][iCol]));
+				//nextLine.append(' ');
 	    	}
 
-			System.out.println(nextLine);
-			nextLine.setLength(0);
+			//System.out.println(nextLine);
+			//nextLine.setLength(0);
 		}
 
 		// Step 2: Match each isogrid element's value with appropriate case value, then draw the correct lines.
@@ -663,27 +698,24 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     			try {
 	    			switch (msGrid[iCol][iRow]) {
 						case 0 :	break;	// All squares empty, so do nothing
-						case 1 :	// Lower left square filled, so draw from lower left top edge center to lower left right edge center
-									/*xBetween = Math.abs(qtG[iCol][iRow].getX() - qtG[iCol+1][iRow+1].getX()); yBetween = Math.abs(qtG[iCol][iRow].getY() - qtG[iCol+1][iRow+1].getY());
-									grphcs2D.drawLine(qtG[iCol][iRow].getX(), qtG[iCol][iRow].getY(), qtG[iCol][iRow].getX()+xBetween, qtG[iCol][iRow].getY()+yBetween);
-									grphcs2D.drawLine(qtG[iCol][iRow].getX()+xBetween, qtG[iCol][iRow].getY()+yBetween, qtG[iCol+1][iRow+1].getX(), qtG[iCol+1][iRow+1].getY());*/
+						case 1 :	// Lower left square filled, so draw from lower left top edge center to lower left right edge center: directly on -45 degree border
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
 									//QuadCurve2D qc2d = new QuadCurve2D(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), cx, cy, qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
 									//grphcs2D.draw(qc2d);
 									break;
-						case 2 :	// Lower right square filled, so draw from lower right top edge center to lower right left edge center
+						case 2 :	// Lower right square filled, so draw from lower right top edge center to lower right left edge center: 1 dot above 45 degree border
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
 									break;
-						case 3 :	// Both lower squares filled, so draw from lower left top edge center to lower right top edge center
+						case 3 :	// Both right squares filled, so draw from upper right left edge center to lower right left edge center
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY());
 									break;
-						case 4 :	// Upper right square filled, so draw from upper right left edge center to upper right bottom edge center
+						case 4 :	// Upper right square filled, so draw from upper right left edge center to upper right bottom edge center: directly on -45 degree border
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
 									break;
 						case 5 :	// Upper right & lower left filled, which is ambiguous, so need to check if squares somehow connect
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
 									break;
-						case 6 :	// Both right squares filled, so draw from upper right left edge center to lower right left edge center
+						case 6 :	// Both lower squares filled, so draw from lower left top edge center to lower right top edge center
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
 									break;
 						case 7 :	// Upper left square empty, so draw from upper right left edge center to lower left top edge center
@@ -692,7 +724,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 						case 8 :	// Upper left square filled, so draw from upper left bottom edge center to upper left right edge center
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
 									break;
-						case 9 :	// Both left squares filled, so draw from upper left right edge center to lower left right edge center
+						case 9 :	// Both upper squares filled, so draw from upper left bottom edge center to upper right bottom edge center
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
 									break;
 						case 10 :	// Upper left & lower right filled, which is ambiguous, so need to check if squares somehow connect
@@ -701,7 +733,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 						case 11 :	// Upper right square empty, so draw from upper left right edge center to lower right top edge center
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
 									break;
-						case 12 :	// Both upper squares filled, so draw from upper left bottom edge center to upper right bottom edge center
+						case 12 :	// Both left squares filled, so draw from upper left right edge center to lower left right edge center
 									grphcs2D.drawLine(qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
 									break;
 						case 13 :	// Lower right square empty, so draw from lower left right edge center to upper right left edge center
@@ -1026,6 +1058,23 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		matcher.appendTail(replacement);
 
 		return replacement.toString();
+	}
+
+	public static boolean isExpressionNegative(String equation) {
+		boolean isNegative = false;
+		Expression expression = new Expression(equation.replaceAll("x", "1").replaceAll("y", "1"));
+		double result = expression.calculate();
+
+		if (0 > result) { isNegative = true;}
+
+		return isNegative;
+	}
+
+	public static String reverseExpressionSign(String equation) {
+		// For equations that start with "-" remove it
+		if (StringUtils.startsWith(equation, "-")) { return equation.replaceFirst("-", ""); }
+		// For equations that don't start with "-" prepend it
+		else { return "-" + equation; }
 	}
 
 	// Popup warning
