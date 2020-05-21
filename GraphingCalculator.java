@@ -55,7 +55,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     private static Double targetValue = 0D;
     private static Graphics grphcs;
     private static Graphics2D graphics2d;
-    private static Boolean solidLines = false;
+    private static Boolean solidLines = false, clearBetweenPlots = false;
 
 	public GraphingCalculator() {
 	    super(new BorderLayout());
@@ -368,6 +368,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
         keyGraph.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				if (clearBetweenPlots) { clearGraphPanel(); }
+
 				graphFormula(formulaText.getText());
 			}
         });
@@ -382,6 +384,20 @@ public class GraphingCalculator extends JPanel implements ItemListener {
         });
         keypadPanelCntrl1.add(keyClearGraph);
         formulaPanel.add(keypadPanelCntrl1);
+
+        JCheckBox autoClear = new JCheckBox("Auto Clear");
+        autoClear.setSelected(false);
+        autoClear.setBackground(Color.GRAY);
+        autoClear.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JCheckBox autoClrCB = (JCheckBox) e.getSource();
+
+				if (autoClrCB.isSelected()) { clearBetweenPlots = true; }
+				else { clearBetweenPlots = false; }
+			}
+        });
+        keypadPanelCntrl1.add(autoClear);
 
         JPanel fillerPanel = new JPanel();
         fillerPanel.setBackground(Color.GRAY);
@@ -454,7 +470,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		}*/
 
 		// String processing on equation occurs outside of Cartesian processing because quadtree algorithm is recursive
-/*		if (StringUtils.isNumeric(StringUtils.substringBefore(function, "="))) {
+		if (StringUtils.isNumeric(StringUtils.substringBefore(function, "="))) {
 			System.out.println("1");
 			frmNoEquals = "(" + StringUtils.substringAfter(function, "=") + ") - (" + StringUtils.substringBefore(function, "=") + ")";
 		}
@@ -465,7 +481,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		else {
 			System.out.println("3");
 			//frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
-*/
+
 			function = function.replaceAll(" ", "");
 			// Store each equation separately
 			leftEquation = StringUtils.substringBefore(function, "=");
@@ -493,7 +509,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			else {
 				frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
 			}
-//		}
+		}
 		System.out.println("frmNoEquals: " + frmNoEquals);
 
 		// 1. Use quadtree-style algorithm to populate array list of 2d coordinates & related equation results
