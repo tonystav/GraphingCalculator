@@ -393,8 +393,14 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			public void actionPerformed(ActionEvent e) {
 				JCheckBox autoClrCB = (JCheckBox) e.getSource();
 
-				if (autoClrCB.isSelected()) { clearBetweenPlots = true; }
-				else { clearBetweenPlots = false; }
+				if (autoClrCB.isSelected()) {
+					clearBetweenPlots = true;
+					keyClearGraph.setEnabled(false);
+				}
+				else {
+					clearBetweenPlots = false;
+					keyClearGraph.setEnabled(true);
+				}
 			}
         });
         keypadPanelCntrl1.add(autoClear);
