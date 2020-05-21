@@ -1,4 +1,3 @@
-import com.badlogic.gdx.math.*;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -8,27 +7,12 @@ import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowFocusListener;
-import java.awt.geom.QuadCurve2D;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.prefs.Preferences;
+import java.math.BigDecimal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -38,8 +22,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.border.EtchedBorder;
-import net.objecthunter.exp4j.ExpressionBuilder;
-import org.apache.commons.lang3.*;
+
+import org.apache.commons.lang3.StringUtils;
 import org.mariuszgromada.math.mxparser.Expression;
 
 public class GraphingCalculator extends JPanel implements ItemListener {
@@ -55,7 +39,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     private static Double targetValue = 0D;
     private static Graphics grphcs;
     private static Graphics2D graphics2d;
-    private static Boolean solidLines = false, clearBetweenPlots = false;
+    private static Boolean solidLines = false, clearBetweenPlots = false, showMessages = false, showDetailMessages = false;
 
 	public GraphingCalculator() {
 	    super(new BorderLayout());
@@ -82,7 +66,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			public void windowGainedFocus(WindowEvent we) {
 				clearGraphPanel();
 				graphFormula(formulaText.getText());
-				System.out.println("Got here");
+				if (showMessages) { System.out.println("Got here"); }
 				try { TimeUnit.MILLISECONDS.sleep(1000); } catch (InterruptedException e) { e.printStackTrace(); };
 			}
 		});*/
@@ -119,8 +103,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		    	Graphics2D graphics2d = (Graphics2D)g;
 
 		    	graphics2d.setColor(Color.BLACK);
-		    	graphics2d.drawLine(0, displaySize/2, displaySize, displaySize/2);	// Horizontal graph center line
-		    	graphics2d.drawLine(displaySize/2, 0, displaySize/2, displaySize);	// Vertical graph center line
+		    	graphics2d.drawLine(0, graphCenter, displaySize, graphCenter);	// Horizontal graph center line
+		    	graphics2d.drawLine(graphCenter, 0, graphCenter, displaySize);	// Vertical graph center line
 		    	//graphFormula(formulaText.getText());
 		    }
 
@@ -465,7 +449,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		Integer gridSize = graphCenter+1; // Accommodates quadtree total but maps plot storage to graph size
 		QTGrid qtG = new QTGrid(gridSize);
 
-		System.out.println("function: " + function);
+		if (showMessages) { System.out.println("function: " + function); }
 		long startTime = System.currentTimeMillis();
 
     	// Initialize grid
@@ -477,15 +461,15 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 		// String processing on equation occurs outside of Cartesian processing because quadtree algorithm is recursive
 		if (StringUtils.isNumeric(StringUtils.substringBefore(function, "="))) {
-			System.out.println("1");
+			if (showMessages) { System.out.println("1"); }
 			frmNoEquals = "(" + StringUtils.substringAfter(function, "=") + ") - (" + StringUtils.substringBefore(function, "=") + ")";
 		}
 		else if (StringUtils.isNumeric(StringUtils.substringAfter(function, "="))) {
-			System.out.println("2");
+			if (showMessages) { System.out.println("2"); }
 			frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
 		}
 		else {
-			System.out.println("3");
+			if (showMessages) { System.out.println("3"); }
 			//frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
 
 			function = function.replaceAll(" ", "");
@@ -516,7 +500,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
 			}
 		}
-		System.out.println("frmNoEquals: " + frmNoEquals);
+		if (showMessages) { System.out.println("frmNoEquals: " + frmNoEquals); }
 
 		// 1. Use quadtree-style algorithm to populate array list of 2d coordinates & related equation results
 		quadtreeStylePlot(graphics2d, frmNoEquals, 0, displaySize, displaySize, qtG);
@@ -525,7 +509,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		marchingSquares(graphics2d, qtG);
 
 		long endTime = System.currentTimeMillis();
-		System.out.println("graphCartesianFunction & marchingSquares took " + (endTime - startTime) + " milliseconds");
+		if (showMessages) { System.out.println("graphCartesianFunction & marchingSquares took " + (endTime - startTime) + " milliseconds"); }
     }
 
     // Use quadtree-style approach: Start with level 0, calculate function result based on coordinates provided,
@@ -534,9 +518,11 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     private static void quadtreeStylePlot(Graphics2D grphcs2D, String function, int level, int xCoordinate, int yCoordinate, QTGrid qtG) {
 		String frmlRplc = "";
 		int nextLevel = 0, levelLimit = 8, newDivisor = 0, newAmount = 0, ulx =0, uly=0, urx=0, ury=0, llx=0, lly=0, lrx=0, lry=0;
-		double x=0D, y=0D, resultA = 0D;
+		double x=0D, y=0D, resultA = 0D, rs = 0D;
 		Expression expression;
-		//System.out.println("level: " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate);
+
+		if (showDetailMessages) { System.out.println("level: " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate); }
+		if (showMessages) { System.out.println("Riemann sum: " + intRiemann(graphCenter - xCoordinate, graphCenter + xCoordinate, 1)); }
 
 		// Cartesian coordinates: test cases
 		// (((x^2) + (y^2) - 2)^3) / (x^2) = 4 // Horizontal Nephroid
@@ -604,16 +590,20 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			frmlRplc = function.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
 						.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("\\+-", "\\-");
 		}
-		//System.out.println("frmlRplc: " + frmlRplc);
+		if (showDetailMessages) { System.out.println("frmlRplc: " + frmlRplc); }
 		expression = new Expression(frmlRplc);
 		resultA = expression.calculate();
-		//System.out.println("point:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA);
+		if (showDetailMessages) { System.out.println("point:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA); }
 
-		if ((0 > resultA)) {
-			//System.out.println("graphing:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA);
-			if (levelLimit == level) { // Maintains most of plot precision but accommodates plot storage as well
+		if (levelLimit == level) { // Maintains most of plot precision but accommodates plot storage as well
+			if ((0 > resultA)) {
+				if (showMessages) { System.out.println("graphing:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA); }
 				grphcs2D.fillRect((int) (xCoordinate/2), (int) (yCoordinate/2), 2, 2);
 			}
+
+			// Store all visited points: may need everything so as to find curve perimeter
+			qtG.setGridElement((xCoordinate/8)+1, (yCoordinate/8)+1, xCoordinate/2, yCoordinate/2, resultA);
+			if (showDetailMessages) { System.out.println("level: " + level + ", qtG:: x: " + xCoordinate/4 + ", y: " + yCoordinate/4 + ", QContent:: x: " + xCoordinate + ", y: " + yCoordinate + ", resultA: " + resultA); }
 		}
 
 		if (level < levelLimit) {
@@ -621,26 +611,39 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			nextLevel = level + 1;
 			newDivisor = (int) Math.pow(2D, nextLevel);
 			newAmount = displaySize / newDivisor;
-			//System.out.println("nextLevel: " + nextLevel + ", newDivisor: " + newDivisor + ", newAmount: " + newAmount);
+			if (showDetailMessages) { System.out.println("nextLevel: " + nextLevel + ", newDivisor: " + newDivisor + ", newAmount: " + newAmount); }
 
 			// Process upper left quadrant
 			ulx = xCoordinate - newAmount; uly = yCoordinate - newAmount;
-			quadtreeStylePlot(grphcs2D, function, nextLevel, ulx, uly, qtG);
+			rs = intRiemann(graphCenter - ulx, graphCenter + ulx, 1);
+			if ((Double.compare(4.0E7D, rs) < 0) && (Double.compare(5.0E8D, rs) > 0)) {
+				quadtreeStylePlot(grphcs2D, function, nextLevel, ulx, uly, qtG);
+				if (showMessages) { System.out.println("rs: " + BigDecimal.valueOf(rs)); }
+			}
+
 			// Process upper right quadrant
 			urx = xCoordinate + newAmount; ury = yCoordinate - newAmount;
-			quadtreeStylePlot(grphcs2D, function, nextLevel, urx, ury, qtG);
+			rs = intRiemann(graphCenter - urx, graphCenter + urx, 1);
+			if ((Double.compare(4.0E7D, rs) < 0) && (Double.compare(5.0E8D, rs) > 0)) {
+				quadtreeStylePlot(grphcs2D, function, nextLevel, urx, ury, qtG);
+				if (showMessages) { System.out.println("rs: " + BigDecimal.valueOf(rs)); }
+			}
+
 			// Process lower left quadrant
 			llx = xCoordinate - newAmount; lly = yCoordinate + newAmount;
-			quadtreeStylePlot(grphcs2D, function, nextLevel, llx, lly, qtG);
+			rs = intRiemann(graphCenter - llx, graphCenter + llx, 1);
+			if ((Double.compare(4.0E7D, rs) < 0) && (Double.compare(5.0E8D, rs) > 0)) {
+				quadtreeStylePlot(grphcs2D, function, nextLevel, llx, lly, qtG);
+				if (showMessages) { System.out.println("rs: " + BigDecimal.valueOf(rs)); }
+			}
+
 			// Process lower right quadrant
 			lrx = xCoordinate + newAmount; lry = yCoordinate + newAmount;
-			quadtreeStylePlot(grphcs2D, function, nextLevel, lrx, lry, qtG);
-		}
-
-		// Store all visited points: may need everything so as to find curve perimeter
-		if (levelLimit == level) {
-			qtG.setGridElement((xCoordinate/8)+1, (yCoordinate/8)+1, xCoordinate/2, yCoordinate/2, resultA);
-			//System.out.println("level: " + level + ", qtG:: x: " + xCoordinate/4 + ", y: " + yCoordinate/4 + ", QContent:: x: " + xCoordinate + ", y: " + yCoordinate + ", resultA: " + resultA);
+			rs = intRiemann(graphCenter - lrx, graphCenter + lrx, 1);
+			if ((Double.compare(4.0E7D, rs) < 0) && (Double.compare(5.0E8D, rs) > 0)) {
+				quadtreeStylePlot(grphcs2D, function, nextLevel, lrx, lry, qtG);
+				if (showMessages) { System.out.println("rs: " + BigDecimal.valueOf(rs)); }
+			}
 		}
     }
 
@@ -675,7 +678,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     			else { nextLine.append(' '); }
     		}
 
-			System.out.println(nextLine);
+			if (showDetailMessages) { System.out.println(nextLine); }
 			nextLine.setLength(0);
     	}*/
 
@@ -708,7 +711,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				//nextLine.append(' ');
 	    	}
 
-			//System.out.println(nextLine);
+			if (showDetailMessages) { System.out.println(nextLine); }
 			//nextLine.setLength(0);
 		}
 
@@ -1025,7 +1028,19 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			}
 		}
     }
+/**/
+	public static double intRiemann(double a, double b, double n) {
+		double width = (b - a) / n;
+		double sum = 0.0;
 
+		for (int i = 0; i < n; i++) {
+			double first_mid_p = a + (width / 2.0) + i * (b - a) / n;
+			sum = sum + (first_mid_p * first_mid_p - first_mid_p + 3);
+		}
+
+		return sum * width;
+	}
+/**/
 	public static boolean noInputErrors(String equation) {
 		boolean isInputOkay = false;
 		String inputNoWhitespace = equation.replaceAll("\\s", "");
