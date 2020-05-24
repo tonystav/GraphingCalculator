@@ -396,7 +396,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
         return formulaPanel;
     }
 
-    private static void graphFormula(String frml) {
+    private static void graphFormula(String equation) {
 		grphcs = graphPanel.getGraphics();
 		grphcs.setColor(Color.RED);
 		graphics2d = (Graphics2D)grphcs;
@@ -407,9 +407,9 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			popupErrorMessage("Unequal number of open and close parentheses.");
 		}
 		else {*/
-		if (noInputErrors(frml)) {
+		if (noInputErrors(equation)) {
 			// Use regular expressions to parse exponents properly
-			String frmlParsed = parseExponents(frml);
+			String frmlParsed = parseExponents(equation);
 
 			// Determine what type of equation was entered
 			// Polar coordinates: 'r=f(θ)'
@@ -444,12 +444,12 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		}
     }
 
-    private static void graphCartesianFunction(Graphics2D grphcs2D, String function) {
+    private static void graphCartesianFunction(Graphics2D grphcs2D, String equation) {
 		String leftEquation = "", rightEquation = "", xEquation = "", yEquation = "", frmNoEquals = "";
 		Integer gridSize = graphCenter+1; // Accommodates quadtree total but maps plot storage to graph size
 		QTGrid qtG = new QTGrid(gridSize);
 
-		if (showMessages) { System.out.println("function: " + function); }
+		if (showMessages) { System.out.println("function: " + equation); }
 		long startTime = System.currentTimeMillis();
 
     	// Initialize grid
@@ -460,44 +460,44 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		}*/
 
 		// String processing on equation occurs outside of Cartesian processing because quadtree algorithm is recursive
-		if (StringUtils.isNumeric(StringUtils.substringBefore(function, "="))) {
+		if (StringUtils.isNumeric(StringUtils.substringBefore(equation, "="))) {
 			if (showMessages) { System.out.println("1"); }
-			frmNoEquals = "(" + StringUtils.substringAfter(function, "=") + ") - (" + StringUtils.substringBefore(function, "=") + ")";
+			frmNoEquals = "(" + StringUtils.substringAfter(equation, "=") + ") - (" + StringUtils.substringBefore(equation, "=") + ")";
 		}
-		else if (StringUtils.isNumeric(StringUtils.substringAfter(function, "="))) {
+		else if (StringUtils.isNumeric(StringUtils.substringAfter(equation, "="))) {
 			if (showMessages) { System.out.println("2"); }
-			frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
+			frmNoEquals = "(" + StringUtils.substringBefore(equation, "=") + ") - (" + StringUtils.substringAfter(equation, "=") + ")";
 		}
 		else {
 			if (showMessages) { System.out.println("3"); }
 			//frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
 
-			function = function.replaceAll(" ", "");
+			equation = equation.replaceAll(" ", "");
 			// Store each equation separately
-			leftEquation = StringUtils.substringBefore(function, "=");
-			rightEquation = StringUtils.substringAfter(function, "=");
+			leftEquation = StringUtils.substringBefore(equation, "=");
+			rightEquation = StringUtils.substringAfter(equation, "=");
 
 			// Determine signs left & right equations, then rearrange into single equation. Replace
 			// double negative (subtraction of negative) with addition of positive (mathematically equivalent)
 
 			// Negatives on both sides, so replace both & move right side to left
 			if ((isExpressionNegative(leftEquation)) && (isExpressionNegative(rightEquation))) {
-				frmNoEquals = ("(" + reverseExpressionSign(StringUtils.substringBefore(function, "=")) + ") - ("
-						+ reverseExpressionSign(StringUtils.substringAfter(function, "=")) + ")");
+				frmNoEquals = ("(" + reverseExpressionSign(StringUtils.substringBefore(equation, "=")) + ") - ("
+						+ reverseExpressionSign(StringUtils.substringAfter(equation, "=")) + ")");
 			}
 			// Left side negative, so reverse sign & append to right side
 			else if (isExpressionNegative(leftEquation)) {
-				frmNoEquals = ("(" + StringUtils.substringAfter(function, "=") + ") + ("
-							+ reverseExpressionSign(StringUtils.substringBefore(function, "=")) + ")");
+				frmNoEquals = ("(" + StringUtils.substringAfter(equation, "=") + ") + ("
+							+ reverseExpressionSign(StringUtils.substringBefore(equation, "=")) + ")");
 			}
 			// Right side negative, so reverse sign & append to left side
 			else if (isExpressionNegative(rightEquation)) {
-				frmNoEquals = ("(" + StringUtils.substringBefore(function, "=") + ") + ("
-							+ reverseExpressionSign(StringUtils.substringAfter(function, "=")) + ")");
+				frmNoEquals = ("(" + StringUtils.substringBefore(equation, "=") + ") + ("
+							+ reverseExpressionSign(StringUtils.substringAfter(equation, "=")) + ")");
 			}
 			// Neither side negative, so append right side, as negative, to left side
 			else {
-				frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
+				frmNoEquals = "(" + StringUtils.substringBefore(equation, "=") + ") - (" + StringUtils.substringAfter(equation, "=") + ")";
 			}
 		}
 		if (showMessages) { System.out.println("frmNoEquals: " + frmNoEquals); }
@@ -516,7 +516,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     // Use quadtree-style approach: Start with level 0, calculate function result based on coordinates provided,
     // graph function at coordinates if result is inside given threshold, subdivide screen into quadrants,
     // calculate new coordinates & next level, then call same method with new parameters for each quadrant (recursion)
-    private static void quadtreeStylePlot(Graphics2D grphcs2D, String function, int level, int xCoordinate, int yCoordinate, QTGrid qtG) {
+    private static void quadtreeStylePlot(Graphics2D grphcs2D, String equation, int level, int xCoordinate, int yCoordinate, QTGrid qtG) {
 		String frmlRplc = "";
 		int nextLevel = 0, levelLimit = 8, newDivisor = 0, newAmount = 0, ulx =0, uly=0, urx=0, ury=0, llx=0, lly=0, lrx=0, lry=0;
 		double x=0D, y=0D, resultA = 0D, rs = 0D;
@@ -582,12 +582,12 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		y = (displaySize - yCoordinate) / 100D;
 
 		// Need 2 versions of replacement equation so as to compensate for any functions included in equation
-		if (containsFunction(function)) {
-			frmlRplc = function.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
+		if (containsFunction(equation)) {
+			frmlRplc = equation.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
 						.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("\\+-", "\\+");
 		}
 		else {
-			frmlRplc = function.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
+			frmlRplc = equation.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
 						.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("\\+-", "\\-");
 		}
 		if (showDetailMessages) { System.out.println("frmlRplc: " + frmlRplc); }
@@ -615,19 +615,19 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 			// Process upper left quadrant
 			ulx = xCoordinate - newAmount; uly = yCoordinate - newAmount;
-			quadtreeStylePlot(grphcs2D, function, nextLevel, ulx, uly, qtG);
+			quadtreeStylePlot(grphcs2D, equation, nextLevel, ulx, uly, qtG);
 
 			// Process upper right quadrant
 			urx = xCoordinate + newAmount; ury = yCoordinate - newAmount;
-			quadtreeStylePlot(grphcs2D, function, nextLevel, urx, ury, qtG);
+			quadtreeStylePlot(grphcs2D, equation, nextLevel, urx, ury, qtG);
 
 			// Process lower left quadrant
 			llx = xCoordinate - newAmount; lly = yCoordinate + newAmount;
-			quadtreeStylePlot(grphcs2D, function, nextLevel, llx, lly, qtG);
+			quadtreeStylePlot(grphcs2D, equation, nextLevel, llx, lly, qtG);
 
 			// Process lower right quadrant
 			lrx = xCoordinate + newAmount; lry = yCoordinate + newAmount;
-			quadtreeStylePlot(grphcs2D, function, nextLevel, lrx, lry, qtG);
+			quadtreeStylePlot(grphcs2D, equation, nextLevel, lrx, lry, qtG);
 		}
     }
 
@@ -761,12 +761,12 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     	}
     }
 
-    private static void graphStraightLine(String frml, Graphics2D grphcs2D) {
-    	String frmlRplc = frml.replaceAll("x=", "").replaceAll("=x", "").replaceAll("y=", "").replaceAll("=y", "").replaceAll("--", "");
+    private static void graphStraightLine(String equation, Graphics2D grphcs2D) {
+    	String frmlRplc = equation.replaceAll("x=", "").replaceAll("=x", "").replaceAll("y=", "").replaceAll("=y", "").replaceAll("--", "");
 		Expression expression = new Expression(frmlRplc);
 		int result = (int) expression.calculate() * 50;
 
-    	if (frml.contains("x")) {
+    	if (equation.contains("x")) {
     		grphcs2D.drawLine((graphCenter) + result, 0, (graphCenter)  + result, displaySize);
     	}
     	else {
@@ -774,7 +774,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     	}
     }
 
-    private static void graph1ParameterEquation(String frml, Graphics2D grphcs2D) {
+    private static void graph1ParameterEquation(String equation, Graphics2D grphcs2D) {
 		String frmlRplc = "";
 		int resultX = 0, resultY = 0, prvsX = 0, prvsY = 0;
 		Expression expression;
@@ -790,17 +790,17 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			float fi = i / 100;
 
 			// Vertical equation: f(y)
-			if (frml.contains("y")) {
+			if (equation.contains("y")) {
 				// Need multiplier on 'fi', scaled to circle radius, to calibrate size with polar & parametric versions of circle
 				resultY = (int) (graphCenter + (fi*50));
 
-				if (frml.replaceAll(" ", "").contains("^-")) {
+				if (equation.replaceAll(" ", "").contains("^-")) {
 					// Need multiplier appended to 'frmlRplc, scaled to circle radius, to calibrate size with polar & parametric versions of circle
-					frmlRplc = "(" + frml.replaceAll("y", String.valueOf(fi)) + ") * 500";
+					frmlRplc = "(" + equation.replaceAll("y", String.valueOf(fi)) + ") * 500";
 				}
 				else {
 					// Need multiplier appended to 'frmlRplc, scaled to circle radius, to calibrate size with polar & parametric versions of circle
-					frmlRplc = "(" + frml.replaceAll("y", String.valueOf(fi)) + ") * 50";
+					frmlRplc = "(" + equation.replaceAll("y", String.valueOf(fi)) + ") * 50";
 				}
 
 				frmlRplc = frmlRplc.replaceAll("--", "");
@@ -812,13 +812,13 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				// Need multiplier on 'fi', scaled to circle radius, to calibrate size with polar & parametric versions of circle
 				resultX = (int) (graphCenter + (fi*50));
 
-				if (frml.replaceAll(" ", "").contains("^-")) {
+				if (equation.replaceAll(" ", "").contains("^-")) {
 					// Need multiplier appended to 'frmlRplc, scaled to circle radius, to calibrate size with polar & parametric versions of circle
-					frmlRplc = "(" + frml.replaceAll("x", String.valueOf(fi)) + ") * 500";
+					frmlRplc = "(" + equation.replaceAll("x", String.valueOf(fi)) + ") * 500";
 				}
 				else {
 					// Need multiplier appended to 'frmlRplc, scaled to circle radius, to calibrate size with polar & parametric versions of circle
-					frmlRplc = "(" + frml.replaceAll("x", String.valueOf(fi)) + ") * 50";
+					frmlRplc = "(" + equation.replaceAll("x", String.valueOf(fi)) + ") * 50";
 				}
 
 				frmlRplc = frmlRplc.replaceAll("--", "");
@@ -842,7 +842,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		}
     }
 
-    private static void graphPolarEquation(String frml, Graphics2D grphcs2D) {
+    private static void graphPolarEquation(String equation, Graphics2D grphcs2D) {
 		String frmlNoEquals = "", frmlRplc = "";
 		Double resultX = 0D, resultY = 0D, resultA = 0D, prvsX = 0D, prvsY = 0D, threshold = 50D;
 		Expression expression;
@@ -871,11 +871,11 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// r=(sin(theta) + sin(2.5*theta)^3)*4 // Scallop shell
 		// r=2*(1+e*cos(pi*theta)) // Cyclic harmonic
 		// Determine if equation has fixed value & which side of equation has that value.
-		if ("r".equalsIgnoreCase(StringUtils.substringBefore(frml, "="))) {
-			frmlNoEquals = StringUtils.substringAfter(frml, "=");
+		if ("r".equalsIgnoreCase(StringUtils.substringBefore(equation, "="))) {
+			frmlNoEquals = StringUtils.substringAfter(equation, "=");
 		}
-		else if ("r".equalsIgnoreCase(StringUtils.substringAfter(frml, "="))) {
-			frmlNoEquals = StringUtils.substringBefore(frml, "=");
+		else if ("r".equalsIgnoreCase(StringUtils.substringAfter(equation, "="))) {
+			frmlNoEquals = StringUtils.substringBefore(equation, "=");
 		}
 		else {
 			// Popup warning
@@ -906,7 +906,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		}
     }
 
-	private static void graphParametericEquations(String frml, Graphics2D grphcs2D) {
+	private static void graphParametericEquations(String equation, Graphics2D grphcs2D) {
 		String leftEquation = "", rightEquation = "", xEquation = "", yEquation = "", frmlRplc = "", mltplrX = "", mltplrY = "";
 		int resultX = 0, resultY = 0, prvsX = 0, prvsY = 0;
 		Double threshold = 50D;
@@ -938,15 +938,15 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// x=2*cos(z)-2*cos(pi*z); y=2*sin(z)-2*sin(pi*z) // Complex Epicycloid
 		// x=2.5*cos(z) ; y=2.5*sin(z)^3 // "Puckered lips"
 		// x=sin(z)* ((e^cos(z)) - (2*cos(4*z)) - (sin(z/12))^5) ; y=cos(z)* ((e^cos(z)) - (2*cos(4*z)) - (sin(z/12))^5) // Complex butterfly
-		if ((StringUtils.countMatches(frml, "=") != 2)) {
+		if ((StringUtils.countMatches(equation, "=") != 2)) {
 			// Popup warning
 			popupErrorMessage("Wrong number of '=' signs for these equations.");
 		}
 		else {
-			frml = frml.replaceAll(" ", "");
+			equation = equation.replaceAll(" ", "");
 			// Store each equation separately
-			leftEquation = StringUtils.substringBefore(frml, ";");
-			rightEquation = StringUtils.substringAfter(frml, ";");
+			leftEquation = StringUtils.substringBefore(equation, ";");
+			rightEquation = StringUtils.substringAfter(equation, ";");
 
 			// Determine x and y equations
 			if (StringUtils.contains(leftEquation, "x")) {
@@ -975,7 +975,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			if (xEquation.replaceAll(" ", "").contains("^-")) { mltplrX = " * 500"; }
 			else  { mltplrX = " * 50"; }
 
-			if (frml.replaceAll(" ", "").contains("^-")) { mltplrY = " * 500"; }
+			if (equation.replaceAll(" ", "").contains("^-")) { mltplrY = " * 500"; }
 			else  { mltplrY = " * 50"; }
 
 			// Final formatting
@@ -1012,6 +1012,39 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			}
 		}
     }
+
+	public static boolean isQuadrantOccupied(int startXY, int endXY, String equation) {
+		boolean quadrantIsOccupied = false;
+    	String frmlRplc = "";
+		Expression expression;
+		double result = 0D;
+
+		// First scan for results diagonally through quadrant from top left to bottom right
+		for (int xy = startXY; xy < endXY; xy++) {
+			frmlRplc = equation.replaceAll("x", String.valueOf(xy)).replaceAll("y", String.valueOf(xy));
+			expression = new Expression(frmlRplc);
+			result = expression.calculate();
+
+			if (0 > result) {
+				quadrantIsOccupied = true;
+			}
+		}
+
+		// If no results then scan diagonally through quadrant from top right to bottom left
+		if (!quadrantIsOccupied) {
+			for (int xy = endXY; xy > startXY; xy++) {
+				frmlRplc = equation.replaceAll("x", String.valueOf(xy)).replaceAll("y", String.valueOf(xy));
+				expression = new Expression(frmlRplc);
+				result = expression.calculate();
+
+				if (0 > result) {
+					quadrantIsOccupied = true;
+				}
+			}
+		}
+
+		return quadrantIsOccupied;
+	}
 
 	public static boolean noInputErrors(String equation) {
 		boolean isInputOkay = false;
