@@ -39,7 +39,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     private static Double targetValue = 0D;
     private static Graphics grphcs;
     private static Graphics2D graphics2d;
-    private static Boolean solidLines = false, clearBetweenPlots = false, showMessages = false, showDetailMessages = false;
+    private static Boolean solidLines = false, clearBetweenPlots = false, showMessages = true, showDetailMessages = false;
 
 	public GraphingCalculator() {
 	    super(new BorderLayout());
@@ -510,6 +510,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 		long endTime = System.currentTimeMillis();
 		if (showMessages) { System.out.println("graphCartesianFunction & marchingSquares took " + (endTime - startTime) + " milliseconds"); }
+		System.out.println("graphCartesianFunction & marchingSquares took " + (endTime - startTime) + " milliseconds");
     }
 
     // Use quadtree-style approach: Start with level 0, calculate function result based on coordinates provided,
@@ -522,7 +523,6 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		Expression expression;
 
 		if (showDetailMessages) { System.out.println("level: " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate); }
-		if (showMessages) { System.out.println("Riemann sum: " + intRiemann(graphCenter - xCoordinate, graphCenter + xCoordinate, 1)); }
 
 		// Cartesian coordinates: test cases
 		// (((x^2) + (y^2) - 2)^3) / (x^2) = 4 // Horizontal Nephroid
@@ -615,35 +615,19 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 			// Process upper left quadrant
 			ulx = xCoordinate - newAmount; uly = yCoordinate - newAmount;
-			rs = intRiemann(graphCenter - ulx, graphCenter + ulx, 1);
-			if ((Double.compare(4.0E7D, rs) < 0) && (Double.compare(5.0E8D, rs) > 0)) {
-				quadtreeStylePlot(grphcs2D, function, nextLevel, ulx, uly, qtG);
-				if (showMessages) { System.out.println("rs: " + BigDecimal.valueOf(rs)); }
-			}
+			quadtreeStylePlot(grphcs2D, function, nextLevel, ulx, uly, qtG);
 
 			// Process upper right quadrant
 			urx = xCoordinate + newAmount; ury = yCoordinate - newAmount;
-			rs = intRiemann(graphCenter - urx, graphCenter + urx, 1);
-			if ((Double.compare(4.0E7D, rs) < 0) && (Double.compare(5.0E8D, rs) > 0)) {
-				quadtreeStylePlot(grphcs2D, function, nextLevel, urx, ury, qtG);
-				if (showMessages) { System.out.println("rs: " + BigDecimal.valueOf(rs)); }
-			}
+			quadtreeStylePlot(grphcs2D, function, nextLevel, urx, ury, qtG);
 
 			// Process lower left quadrant
 			llx = xCoordinate - newAmount; lly = yCoordinate + newAmount;
-			rs = intRiemann(graphCenter - llx, graphCenter + llx, 1);
-			if ((Double.compare(4.0E7D, rs) < 0) && (Double.compare(5.0E8D, rs) > 0)) {
-				quadtreeStylePlot(grphcs2D, function, nextLevel, llx, lly, qtG);
-				if (showMessages) { System.out.println("rs: " + BigDecimal.valueOf(rs)); }
-			}
+			quadtreeStylePlot(grphcs2D, function, nextLevel, llx, lly, qtG);
 
 			// Process lower right quadrant
 			lrx = xCoordinate + newAmount; lry = yCoordinate + newAmount;
-			rs = intRiemann(graphCenter - lrx, graphCenter + lrx, 1);
-			if ((Double.compare(4.0E7D, rs) < 0) && (Double.compare(5.0E8D, rs) > 0)) {
-				quadtreeStylePlot(grphcs2D, function, nextLevel, lrx, lry, qtG);
-				if (showMessages) { System.out.println("rs: " + BigDecimal.valueOf(rs)); }
-			}
+			quadtreeStylePlot(grphcs2D, function, nextLevel, lrx, lry, qtG);
 		}
     }
 
@@ -1028,19 +1012,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			}
 		}
     }
-/**/
-	public static double intRiemann(double a, double b, double n) {
-		double width = (b - a) / n;
-		double sum = 0.0;
 
-		for (int i = 0; i < n; i++) {
-			double first_mid_p = a + (width / 2.0) + i * (b - a) / n;
-			sum = sum + (first_mid_p * first_mid_p - first_mid_p + 3);
-		}
-
-		return sum * width;
-	}
-/**/
 	public static boolean noInputErrors(String equation) {
 		boolean isInputOkay = false;
 		String inputNoWhitespace = equation.replaceAll("\\s", "");
