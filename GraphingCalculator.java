@@ -564,7 +564,10 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// (x^3)+(y^3)=3*2*x*y // Folium of Descartes
 		// ((x-1)^2) * ((x^2)+(y^2)) = 9*(x^2) // Nicomedes' Conchoid
 		// y^2 * (1+x) = x^2 * (3-x) // Maclaurin's Trisectrix
+		// Gamma(x)=Gamma(y) // 
+		// Gamma(1/x)=Gamma(1/y) // "Polar Opposites"
 		// abs(Gamma(y))=abs(Gamma(x)) // "Leaning Flower"
+		// abs(Gamma(1/y))=abs(Gamma(1/x)) // 
 		// (4*x^3)+(9*x*y^2)-(9*y^3)-(36*x)+(36*y) = 0 // "Almost yin/yang"
 		// x^2*y = (y-1)^3 // Cubical hyperbola
 		// Asymmetric
@@ -1012,39 +1015,6 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			}
 		}
     }
-
-	public static boolean isQuadrantOccupied(int startXY, int endXY, String equation) {
-		boolean quadrantIsOccupied = false;
-    	String frmlRplc = "";
-		Expression expression;
-		double result = 0D;
-
-		// First scan for results diagonally through quadrant from top left to bottom right
-		for (int xy = startXY; xy < endXY; xy++) {
-			frmlRplc = equation.replaceAll("x", String.valueOf(xy)).replaceAll("y", String.valueOf(xy));
-			expression = new Expression(frmlRplc);
-			result = expression.calculate();
-
-			if (0 > result) {
-				quadrantIsOccupied = true;
-			}
-		}
-
-		// If no results then scan diagonally through quadrant from top right to bottom left
-		if (!quadrantIsOccupied) {
-			for (int xy = endXY; xy > startXY; xy++) {
-				frmlRplc = equation.replaceAll("x", String.valueOf(xy)).replaceAll("y", String.valueOf(xy));
-				expression = new Expression(frmlRplc);
-				result = expression.calculate();
-
-				if (0 > result) {
-					quadrantIsOccupied = true;
-				}
-			}
-		}
-
-		return quadrantIsOccupied;
-	}
 
 	public static boolean noInputErrors(String equation) {
 		boolean isInputOkay = false;
