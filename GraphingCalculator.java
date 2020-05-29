@@ -32,6 +32,7 @@ import experiments.GraphingCalculator.graphThread;
 
 public class GraphingCalculator extends JPanel implements ItemListener {
 	private static final long serialVersionUID = 1L;
+	private static long startTime, endTime;
 
 	public static class graphThread implements Runnable {
 	    private Thread gt;
@@ -63,11 +64,18 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 	    }
 
 		public void run() {
+			if (3 == Thread.activeCount()) {
+				startTime = System.currentTimeMillis();
+			}
 			System.out.println("run:: Active threads: " + Thread.activeCount());
 			quadtreeStylePlot(g2d, equation, lvl, xCrdnt, yCrdnt, qtG);
 
-			if (3 >= Thread.activeCount()) {
+			//if (!Thread.getAllStackTraces().containsValue("Thread-")) {
+			if (3 == Thread.activeCount()) {
 				marchingSquares(graphics2d, qtG);
+
+				endTime = System.currentTimeMillis();
+				System.out.println("elapsed time: " + (endTime - startTime) + " milliseconds");
 			}
 
 			this.stop();
@@ -500,7 +508,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		QTGrid qtG = new QTGrid(gridSize);
 
 		if (showMessages) { System.out.println("function: " + equation); }
-		long startTime = System.currentTimeMillis();
+		//long startTime = System.currentTimeMillis();
 
     	// Initialize grid
 		/*for (int row = 0; row < gridSize; row++) {
@@ -551,25 +559,38 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			}
 		}
 		if (showMessages) { System.out.println("frmNoEquals: " + frmNoEquals); }
-
+/*
 		// 1. Use quadtree-style algorithm to populate array list of 2d coordinates & related equation results
-		//quadtreeStylePlot(graphics2d, frmNoEquals, 0, displaySize, displaySize, qtG);
+		quadtreeStylePlot(graphics2d, frmNoEquals, 0, displaySize, displaySize, qtG);
 
 		// 2. Use marching squares algorithm to create graph from array list
-		//marchingSquares(graphics2d, qtG);
+		marchingSquares(graphics2d, qtG);
+*/
+		// Spawn 1 thread for each of the level 1 sections: speeds up processing by 2x
+		/*grphthrd = new graphThread(graphics2d, frmNoEquals, 1, 400, 400, qtG);	grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 1, 1200, 400, qtG);		grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 1, 400, 1200, qtG);		grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 1, 1200, 1200, qtG);	grphthrd.start();*/
+		// Spawn 1 thread for each of the level 2 sections (16 total): speeds up processing by 4x
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 200, 200, qtG);		grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 200, 600, qtG);		grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 200, 1000, qtG);		grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 200, 1400, qtG);		grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 600, 200, qtG);		grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 600, 600, qtG);		grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 600, 1000, qtG);		grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 600, 1400, qtG);		grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 1000, 200, qtG);		grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 1000, 600, qtG);		grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 1000, 1000, qtG);	grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 1000, 1400, qtG);	grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 1400, 200, qtG);		grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 1400, 600, qtG);		grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 1400, 1000, qtG);	grphthrd.start();
+		grphthrd = new graphThread(graphics2d, frmNoEquals, 2, 1400, 1400, qtG);	grphthrd.start();
 
-		// Idea: try spawning 1 thread for each of the major (level 1) quadrants: should speed up processing by 4x
-		grphthrd = new graphThread(graphics2d, frmNoEquals, 1, 400, 400, qtG);
-		grphthrd.start();
-		grphthrd = new graphThread(graphics2d, frmNoEquals, 1, 1200, 400, qtG);
-		grphthrd.start();
-		grphthrd = new graphThread(graphics2d, frmNoEquals, 1, 400, 1200, qtG);
-		grphthrd.start();
-		grphthrd = new graphThread(graphics2d, frmNoEquals, 1, 1200, 1200, qtG);
-		grphthrd.start();
-
-		long endTime = System.currentTimeMillis();
-		if (showMessages) { System.out.println("graphCartesianFunction & marchingSquares took " + (endTime - startTime) + " milliseconds"); }
+		//long endTime = System.currentTimeMillis();
+		//if (showMessages) { System.out.println("graphCartesianFunction & marchingSquares took " + (endTime - startTime) + " milliseconds"); }
     }
 
     // Use quadtree-style approach: Start with level 0, calculate function result based on coordinates provided,
@@ -582,6 +603,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		Expression expression;
 
 		if (showDetailMessages) { System.out.println("level: " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate); }
+		System.out.println("level: " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate);
 
 		// Cartesian coordinates: test cases
 		// (((x^2) + (y^2) - 2)^3) / (x^2) = 4 // Horizontal Nephroid
