@@ -11,6 +11,7 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,7 +34,6 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 	private static final long serialVersionUID = 1L;
 
 	public static class graphThread implements Runnable {
-	    private AtomicBoolean graphing = new AtomicBoolean(false);
 	    private Thread gt;
 		String equation;
 		Graphics2D g2d;
@@ -52,17 +52,26 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 	    public void start() {
 	        gt = new Thread(this);
 	        gt.start();
+			System.out.println("Start thread: " + gt.getId() + ", " + gt.getName());
+			System.out.println("start():: Active threads: " + Thread.activeCount());
 	    }
 
 	    public void stop() {
-	        graphing.set(false);
+			System.out.println("Stop thread: " + gt.getId() + ", " + gt.getName());
+	    	gt.interrupt();
+			System.out.println("stop():: Active threads: " + Thread.activeCount());
 	    }
 
 		public void run() {
-			graphing.set(true);
-
+			System.out.println("run:: Active threads: " + Thread.activeCount());
 			quadtreeStylePlot(g2d, equation, lvl, xCrdnt, yCrdnt, qtG);
-			marchingSquares(graphics2d, qtG);
+
+			if (3 >= Thread.activeCount()) {
+				marchingSquares(graphics2d, qtG);
+			}
+
+			this.stop();
+			return;
 		}
 	}
 
@@ -76,7 +85,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     private static Double targetValue = 0D;
     private static Graphics grphcs;
     private static Graphics2D graphics2d;
-    private static Boolean solidLines = false, clearBetweenPlots = false, showMessages = true, showDetailMessages = false;
+    private static Boolean solidLines = false, clearBetweenPlots = true, showMessages = false, showDetailMessages = false;
 
     // Thread parameters
     private static graphThread grphthrd;
@@ -400,6 +409,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
         keypadPanelCntrl1.add(keyGraph);
         JButton keyClearGraph = new JButton();
         keyClearGraph.setText("Clear Graph");
+        keyClearGraph.setEnabled(false);
         keyClearGraph.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -410,7 +420,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
         formulaPanel.add(keypadPanelCntrl1);
 
         JCheckBox autoClear = new JCheckBox("Auto Clear");
-        autoClear.setSelected(false);
+        autoClear.setSelected(true);
         autoClear.setBackground(Color.GRAY);
         autoClear.addActionListener(new ActionListener() {
 			@Override
@@ -545,6 +555,9 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// 1. Use quadtree-style algorithm to populate array list of 2d coordinates & related equation results
 		//quadtreeStylePlot(graphics2d, frmNoEquals, 0, displaySize, displaySize, qtG);
 
+		// 2. Use marching squares algorithm to create graph from array list
+		//marchingSquares(graphics2d, qtG);
+
 		// Idea: try spawning 1 thread for each of the major (level 1) quadrants: should speed up processing by 4x
 		grphthrd = new graphThread(graphics2d, frmNoEquals, 1, 400, 400, qtG);
 		grphthrd.start();
@@ -554,9 +567,6 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		grphthrd.start();
 		grphthrd = new graphThread(graphics2d, frmNoEquals, 1, 1200, 1200, qtG);
 		grphthrd.start();
-
-		// 2. Use marching squares algorithm to create graph from array list
-		//marchingSquares(graphics2d, qtG);
 
 		long endTime = System.currentTimeMillis();
 		if (showMessages) { System.out.println("graphCartesianFunction & marchingSquares took " + (endTime - startTime) + " milliseconds"); }
