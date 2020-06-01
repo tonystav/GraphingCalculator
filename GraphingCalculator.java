@@ -796,8 +796,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 						//			grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
 									break;
 						case 6 :	// Both lower squares filled, so draw from lower left top edge center to lower right top edge center
-						//			grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
-									break;
+						//			grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
+									break;	// Works
 						case 7 :	// Upper left square empty, so draw from upper right left edge center to lower left top edge center
 						//			grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
 									break;	// (Works)
@@ -806,7 +806,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 						//			grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY());
 									break;	// (Needs work)
 						case 9 :	// Both upper squares filled, so draw from upper left bottom edge center to upper right bottom edge center
-						//			grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
+						//			grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
 									break;
 						case 10 :	// Upper left & lower right filled, which is ambiguous, so need to check if squares somehow connect
 						//			grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
@@ -877,7 +877,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 				frmlRplc = frmlRplc.replaceAll("--", "");
 				expression = new Expression(frmlRplc);
-				try {
+				try {	// Needed because specific functions can cause stack overflow in math engine
 					resultX = (int) ((graphCenter) + expression.calculate());
 				}
 				catch (java.lang.StackOverflowError sofe) {
@@ -900,7 +900,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 				frmlRplc = frmlRplc.replaceAll("--", "");
 				expression = new Expression(frmlRplc);
-				try {
+				try {	// Needed because specific functions can cause stack overflow in math engine
 					resultY = (int) ((graphCenter) - expression.calculate());
 				}
 				catch (java.lang.StackOverflowError sofe) {
