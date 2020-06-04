@@ -52,15 +52,15 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 	    public void start() {
 	        gt = new Thread(this);
-			System.out.println("Start thread: " + gt.getId() + ", " + gt.getName());
+			//System.out.println("Start thread: " + gt.getId() + ", " + gt.getName());
 	        gt.start();
-			System.out.println("start():: Active threads: " + Thread.activeCount());
+			//System.out.println("start():: Active threads: " + Thread.activeCount());
 	    }
 
 	    public void stop() {
-			System.out.println("Stop thread: " + gt.getId() + ", " + gt.getName());
+			//System.out.println("Stop thread: " + gt.getId() + ", " + gt.getName());
 	    	gt.interrupt();
-			System.out.println("stop():: Active threads: " + Thread.activeCount());
+			//System.out.println("stop():: Active threads: " + Thread.activeCount());
 	    }
 
 		public void run() {
@@ -938,22 +938,24 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// r=4*sec(5*theta) // Epispiral (also csc)
 		// r= +/-(cos(theta/2)^.67 + sin(theta/2)^.67)^1.5 // Nephroid
 		// r=(10*cos(2*theta))^.5 // Lemniscate
-		// r=2/((cos(4*theta)^.5)) // Maltese cross
+		// r=2/((cos(4*theta)^.5)) // Maltese cross 1
+		// r=2/((sin(4*theta)^.5)) // Maltese cross 2
 		// r=1+2*cos(2*theta) // Ceva cycloid
 		// r=.5*(sec(theta/3)^3) // Tschirnhausen cubic
 		// r=2+sec(theta) // Nicomedes' conchoid
 		// r=3*cos(2*theta) - 2*cos(theta) // Scarabaeus curve
 		// r=cos(theta)*sin(theta)*theta // Simple butterfly
 		// r=(e^sin(theta)) - (2*cos(4*theta)) + (sin(((2*theta) - pi) / 24))^5 // Complex butterfly
+		// r=3*cos((4*theta)-(5*pi/18))+(3*0.07*sin(80*theta)) // Jagged leaved flower
+		// r=(sin(theta) + sin(2.5*theta)^3)*4 // Scallop shell
+		// r=4*cot(e*theta) // Chrysanthemum
+		// r=2*(1+e*cos(pi*theta)) // Cyclic harmonic (2-layered flower)
+		// r=+-(4*cot(theta/2))^.5 // Serpentine curve
 		// Upper/lower half only
 		// r=+-(3*sin(theta)) / (1+cos(theta)*cos(2*theta)) // Pretzel
 		// Left/right half only
 		// r=(3*cos(theta)) / (1+sin(theta)*sin(2*theta)) // Boomerang
-		// r=4*cot(e*theta) // Flower
-		// r=+-(4*cot(theta/2))^.5 // Serpentine curve
-		// r=3*cos((4*theta)-(5*pi/18))+(3*0.07*sin(80*theta)) // Jagged leaved flower
-		// r=(sin(theta) + sin(2.5*theta)^3)*4 // Scallop shell
-		// r=2*(1+e*cos(pi*theta)) // Cyclic harmonic
+
 		// Determine if equation has fixed value & which side of equation has that value.
 		if ("r".equalsIgnoreCase(StringUtils.substringBefore(equation, "="))) {
 			frmlNoEquals = StringUtils.substringAfter(equation, "=");
@@ -1003,7 +1005,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// x=2*cos(z)+cos(2*z); y=2*sin(z)-sin(2*z) // Deltoid
 		// x=2*cos(z)-cos(2*z); y=2*sin(z)+sin(2*z) // Horizontally reversed deltoid
 		// x=(cos(z)^3)*5; y=-(sin(z)^3)*5 // Astroid
-		// x=-((z^2) - 2*z + 5) / ((z^2) - 2*z - 3) ; y=((z^2) - 2*z + 5) / (2*z - 2) // Cruciform curve
+		// x=-((z^2)-2*z+5) / ((z^2)-2*z-3) ; y=((z^2)-2*z+5) / (2*z-2) // Cruciform curve
 		// Also x=1/cos(z) ; y=1/sin(z)
 		// x=+/-(cos(z)^2)*5; y=+/-(sin(z)^2)*5 // Diamond
 		// x=+/-(cos(z)^.5)*5; y=+/-(sin(z)^.5)*5 // Rectircle (round-cornered square)
@@ -1013,7 +1015,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// x=(4*cos(z)) - ((4*sin(z)^2) / (2^.5)) ; y = 4*cos(z)*sin(z) // Fish curve
 		// x=4*cos(z)*(1-2*sin(z)^2) ; y=4*sin(z)*(1+2*cos(z)^2) // Cornoid (change exponents to change shape)
 		// x=8*sin(z)^3 ; y=6*cos(z) - 2*cos(2*z) - 1*cos(3*z) - cos(4*z) // Heart curve
-		// x=4*sin(z) ; y=4*((cos(z)^2)*((2+cos(z))/(3+(sin(z)^2)))) // Bicorn curve
+		// x=4*sin(z) ; y=4*((cos(z)^2)*((2+cos(z))/(3+(sin(z)^2)))) // Bicorn curve (negate both parameters to invert)
 		// x=.5*(1-(3*(z^2))) ; y=.5*z*(3-(z^2)) // Tschirnhausen cubic
 		// x=(1+ .75*sin(z)^2)*cos(z) *4; y=(1-.75 -.75*cos(z)^2)*sin(z)*4 // Talbot's curve
 		// x=cos(z)+0.2*sin(e*z) ; y=sin(z)+0.2*cos(e*z) // Spirograph ring
@@ -1022,6 +1024,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// x=2*cos(z)-2*cos(pi*z); y=2*sin(z)-2*sin(pi*z) // Complex Epicycloid
 		// x=2.5*cos(z) ; y=2.5*sin(z)^3 // "Puckered lips"
 		// x=sin(z)* ((e^cos(z)) - (2*cos(4*z)) - (sin(z/12))^5) ; y=cos(z)* ((e^cos(z)) - (2*cos(4*z)) - (sin(z/12))^5) // Complex butterfly
+
 		if ((StringUtils.countMatches(equation, "=") != 2)) {
 			// Popup warning
 			popupErrorMessage("Wrong number of '=' signs for these equations.");
