@@ -654,11 +654,11 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// Need 2 versions of replacement equation so as to compensate for any functions included in equation
 		if (containsFunction(equation)) {
 			frmlRplc = equation.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
-						.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("\\+-", "\\+");
+						.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("\\+-", "\\+").replace("+ -", "-");
 		}
 		else {
 			frmlRplc = equation.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
-						.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("\\+-", "\\-");
+						.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("\\+-", "\\-").replace("+ -", "-");
 		}
 		if (showDetailMessages) { System.out.println("frmlRplc: " + frmlRplc); }
 
@@ -836,7 +836,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     }
 
     private static void graphStraightLine(String equation, Graphics2D grphcs2D) {
-    	String frmlRplc = equation.replaceAll("x=", "").replaceAll("=x", "").replaceAll("y=", "").replaceAll("=y", "").replaceAll("--", "");
+    	String frmlRplc = equation.replaceAll("x=", "").replaceAll("=x", "").replaceAll("y=", "").replaceAll("=y", "").replaceAll("--", "").replace("+ -", "-");
 		Expression expression = new Expression(frmlRplc);
 		int result = (int) expression.calculate() * 50;
 
@@ -877,7 +877,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					frmlRplc = "(" + equation.replaceAll("y", String.valueOf(fi)) + ") * 50";
 				}
 
-				frmlRplc = frmlRplc.replaceAll("--", "");
+				frmlRplc = frmlRplc.replaceAll("--", "").replace("+ -", "-");
 				expression = new Expression(frmlRplc);
 				try {	// Needed because specific functions can cause stack overflow in math engine
 					resultX = (int) ((graphCenter) + expression.calculate());
@@ -900,7 +900,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					frmlRplc = "(" + equation.replaceAll("x", String.valueOf(fi)) + ") * 50";
 				}
 
-				frmlRplc = frmlRplc.replaceAll("--", "");
+				frmlRplc = frmlRplc.replaceAll("--", "").replace("+ -", "-");
 				expression = new Expression(frmlRplc);
 				try {	// Needed because specific functions can cause stack overflow in math engine
 					resultY = (int) ((graphCenter) - expression.calculate());
@@ -909,7 +909,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					continue;
 				}
 			}
-
+System.out.println("frmlRplc: " + frmlRplc + ", resultX: " + resultX + ", resultY: " + resultY);
 			grphcs2D.fillRect((int)resultX, (int)resultY, 1, 1);
 
 			// Interpolate extra point between basic points
@@ -972,7 +972,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			float thetaR2D = (float) Math.toRadians(angle) / 10;
 			//frmlRplc = "(" + frmlNoEquals.replaceAll("theta", String.valueOf(thetaR2D) + "*[deg]") + ")";
 			frmlRplc = "(" + frmlNoEquals.replaceAll("theta", String.valueOf(thetaR2D)) + ")";
-			frmlRplc = frmlRplc.replaceAll("--", "");
+			frmlRplc = frmlRplc.replaceAll("--", "").replace("+ -", "-");
 			expression = new Expression(frmlRplc);
 			resultA = expression.calculate() * 50;
 			resultX = (resultA * Math.cos(thetaR2D));
@@ -1066,10 +1066,10 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			else  { mltplrY = " * 50"; }
 
 			// Final formatting
-			xEquation.replaceAll("--", "");
+			xEquation.replaceAll("--", "").replace("+ -", "-");
 			xEquation = "(" + xEquation + ")" + mltplrX;
 
-			yEquation.replaceAll("--", "");
+			yEquation.replaceAll("--", "").replace("+ -", "-");
 			yEquation = "(" + yEquation + ")" + mltplrY;
 		}
 
