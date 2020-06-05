@@ -909,7 +909,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					continue;
 				}
 			}
-System.out.println("frmlRplc: " + frmlRplc + ", resultX: " + resultX + ", resultY: " + resultY);
+
 			grphcs2D.fillRect((int)resultX, (int)resultY, 1, 1);
 
 			// Interpolate extra point between basic points
@@ -974,7 +974,7 @@ System.out.println("frmlRplc: " + frmlRplc + ", resultX: " + resultX + ", result
 			frmlRplc = "(" + frmlNoEquals.replaceAll("theta", String.valueOf(thetaR2D)) + ")";
 			frmlRplc = frmlRplc.replaceAll("--", "").replace("+ -", "-");
 			expression = new Expression(frmlRplc);
-			resultA = expression.calculate() * 50;
+			resultA = expression.calculate() * 22.5;
 			resultX = (resultA * Math.cos(thetaR2D));
 			resultY = (resultA * Math.sin(thetaR2D));
 			grphcs2D.fillRect((int) (graphCenter + (resultX)), (int) (graphCenter - (resultY)), 1, 1);
@@ -1059,11 +1059,11 @@ System.out.println("frmlRplc: " + frmlRplc + ", resultX: " + resultX + ", result
 			}
 
 			// Determine which multiplier to use: use 100 for any negative exponents, 10 otherwise
-			if (xEquation.replaceAll(" ", "").contains("^-")) { mltplrX = " * 500"; }
-			else  { mltplrX = " * 50"; }
+			if (xEquation.replaceAll(" ", "").contains("^-")) { mltplrX = " * 225"; }
+			else  { mltplrX = " * 22.5"; }
 
-			if (equation.replaceAll(" ", "").contains("^-")) { mltplrY = " * 500"; }
-			else  { mltplrY = " * 50"; }
+			if (equation.replaceAll(" ", "").contains("^-")) { mltplrY = " * 225"; }
+			else  { mltplrY = " * 22.5"; }
 
 			// Final formatting
 			xEquation.replaceAll("--", "").replace("+ -", "-");
