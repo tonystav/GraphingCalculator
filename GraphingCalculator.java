@@ -838,7 +838,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     private static void graphStraightLine(String equation, Graphics2D grphcs2D) {
     	String frmlRplc = equation.replaceAll("x=", "").replaceAll("=x", "").replaceAll("y=", "").replaceAll("=y", "").replaceAll("--", "").replace("+ -", "-");
 		Expression expression = new Expression(frmlRplc);
-		int result = (int) expression.calculate() * 50;
+		// Multiplier calibrates results to harmonize with other graphing methods
+		int result = (int) (expression.calculate() * 22.5);
 
     	if (equation.contains("x")) {
     		grphcs2D.drawLine((graphCenter) + result, 0, (graphCenter)  + result, displaySize);
@@ -865,7 +866,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 			// Vertical equation: f(y)
 			if (equation.contains("y")) {
-				// Need multiplier on 'fi', scaled to circle radius, to calibrate size with polar & parametric versions of circle
+				// Multiplier calibrates results to harmonize with other graphing methods
 				resultY = (int) (graphCenter + (fi*50));
 
 				if (equation.replaceAll(" ", "").contains("^-")) {
@@ -888,15 +889,13 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			}
 			// Horizontal equation: f(x)
 			else {
-				// Need multiplier on 'fi', scaled to circle radius, to calibrate size with polar & parametric versions of circle
+				// Multiplier calibrates results to harmonize with other graphing methods
 				resultX = (int) (graphCenter + (fi*50));
 
 				if (equation.replaceAll(" ", "").contains("^-")) {
-					// Need multiplier appended to 'frmlRplc, scaled to circle radius, to calibrate size with polar & parametric versions of circle
 					frmlRplc = "(" + equation.replaceAll("x", String.valueOf(fi)) + ") * 500";
 				}
 				else {
-					// Need multiplier appended to 'frmlRplc, scaled to circle radius, to calibrate size with polar & parametric versions of circle
 					frmlRplc = "(" + equation.replaceAll("x", String.valueOf(fi)) + ") * 50";
 				}
 
@@ -917,7 +916,12 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 			// Connect any gaps. Check test conditions either too lenient or too restrictive
 			if (solidLines) {
+				// Next instruction produces occasional vertical connecting lines
 				if ((prvsX != 0 && prvsY != 0) && (Math.abs(resultY - prvsY) < displaySize) && (Math.abs(resultX - prvsX) < displaySize)) {
+				// Next line produces fewer vertical connecting lines but also causes gaps in graph 
+				/*if ((prvsX != 0 && prvsY != 0)
+				&& ((Math.abs(resultY - prvsY) < displaySize) && Math.abs(resultX - prvsX) > 0)
+				&& ((Math.abs(resultX - prvsX) < displaySize) && (Math.abs(resultY - prvsY) > 0))) {*/
 					grphcs2D.drawLine((int) (prvsX), (int) (prvsY), (int) (resultX), (int) (resultY));
 				}
 
@@ -936,7 +940,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// r=(1+cos(theta)) // Cardioid
 		// r=sin(5*theta)*6 // Rose (also cos)
 		// r=4*sec(5*theta) // Epispiral (also csc)
-		// r= +/-(cos(theta/2)^.67 + sin(theta/2)^.67)^1.5 // Nephroid
+		// r=+/-(cos(theta/2)^.67 + sin(theta/2)^.67)^1.5 // Nephroid
 		// r=(10*cos(2*theta))^.5 // Lemniscate
 		// r=2/((cos(4*theta)^.5)) // Maltese cross 1
 		// r=2/((sin(4*theta)^.5)) // Maltese cross 2
@@ -951,6 +955,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// r=4*cot(e*theta) // Chrysanthemum
 		// r=2*(1+e*cos(pi*theta)) // Cyclic harmonic (2-layered flower)
 		// r=+-(4*cot(theta/2))^.5 // Serpentine curve
+		// r=4*cos(2*cos(theta)) // Intersecting unequal lemniscates
 		// Upper/lower half only
 		// r=+-(3*sin(theta)) / (1+cos(theta)*cos(2*theta)) // Pretzel
 		// Left/right half only
@@ -974,7 +979,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			frmlRplc = "(" + frmlNoEquals.replaceAll("theta", String.valueOf(thetaR2D)) + ")";
 			frmlRplc = frmlRplc.replaceAll("--", "").replace("+ -", "-");
 			expression = new Expression(frmlRplc);
-			resultA = expression.calculate() * 22.5;
+			resultA = expression.calculate() * 22.5;	// Multiplier calibrates results to harmonize with other graphing methods
 			resultX = (resultA * Math.cos(thetaR2D));
 			resultY = (resultA * Math.sin(thetaR2D));
 			grphcs2D.fillRect((int) (graphCenter + (resultX)), (int) (graphCenter - (resultY)), 1, 1);
@@ -1023,6 +1028,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// x=cos(z)+(cos(12*z)/4)-(sin(-28*z)/9) ; y=sin(z)+(sin(12*z)/4)+(cos(-28*z)/9) // Complex Spirograph ring
 		// x=2*cos(z)-2*cos(pi*z); y=2*sin(z)-2*sin(pi*z) // Complex Epicycloid
 		// x=2.5*cos(z) ; y=2.5*sin(z)^3 // "Puckered lips"
+		// x=z * cos(z) ; y=z * sin(z) // Opposing spirals
 		// x=sin(z)* ((e^cos(z)) - (2*cos(4*z)) - (sin(z/12))^5) ; y=cos(z)* ((e^cos(z)) - (2*cos(4*z)) - (sin(z/12))^5) // Complex butterfly
 
 		if ((StringUtils.countMatches(equation, "=") != 2)) {
@@ -1058,7 +1064,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				yEquation = StringUtils.substringBefore(yEquation, "=");
 			}
 
-			// Determine which multiplier to use: use 100 for any negative exponents, 10 otherwise
+			// Multiplier calibrates results to harmonize with other graphing methods: use 225 for any negative exponents, 22.5 otherwise
 			if (xEquation.replaceAll(" ", "").contains("^-")) { mltplrX = " * 225"; }
 			else  { mltplrX = " * 22.5"; }
 
