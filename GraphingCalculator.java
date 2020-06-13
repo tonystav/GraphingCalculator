@@ -686,11 +686,11 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// Need 2 versions of replacement equation so as to compensate for any functions included in equation
 		if (containsFunction(equation)) {
 			frmlRplc = equation.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
-						.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("\\+-", "\\+").replace("+ -", "-");
+						.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("- -", "+").replaceAll("\\+-", "\\+").replace("+ -", "-");
 		}
 		else {
 			frmlRplc = equation.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
-						.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("\\+-", "\\-").replace("+ -", "-");
+						.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("- -", "+").replaceAll("\\+-", "\\-").replace("+ -", "-");
 		}
 		if (showDetailMessages) { System.out.println("frmlRplc: " + frmlRplc); }
 
@@ -862,7 +862,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     }
 
     private static void graphStraightLine(String equation, Graphics2D grphcs2D) {
-    	String frmlRplc = equation.replaceAll("x=", "").replaceAll("=x", "").replaceAll("y=", "").replaceAll("=y", "").replaceAll("--", "").replace("+ -", "-");
+    	String frmlRplc = equation.replaceAll("x=", "").replaceAll("=x", "").replaceAll("y=", "").replaceAll("=y", "").replaceAll("--", "").replaceAll("- -", "+").replace("+ -", "-");
 		Expression expression = new Expression(frmlRplc);
 		// Multiplier calibrates results to harmonize with other graphing methods
 		int result = (int) (expression.calculate() * 22.5);
@@ -904,7 +904,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					frmlRplc = "(" + equation.replaceAll("y", String.valueOf(fi)) + ") * 50";
 				}
 
-				frmlRplc = frmlRplc.replaceAll("--", "").replace("+ -", "-");
+				frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "+").replace("+ -", "-");
 				expression = new Expression(frmlRplc);
 				try {	// Needed because specific functions can cause stack overflow in math engine
 					resultX = (int) ((graphCenter) + expression.calculate());
@@ -925,7 +925,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					frmlRplc = "(" + equation.replaceAll("x", String.valueOf(fi)) + ") * 50";
 				}
 
-				frmlRplc = frmlRplc.replaceAll("--", "").replace("+ -", "-");
+				frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "+").replace("+ -", "-");
 				expression = new Expression(frmlRplc);
 				try {	// Needed because specific functions can cause stack overflow in math engine
 					resultY = (int) ((graphCenter) - expression.calculate());
@@ -1017,7 +1017,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			float thetaR2D = (float) Math.toRadians(angle) / 10;
 			//frmlRplc = "(" + frmlNoEquals.replaceAll("theta", String.valueOf(thetaR2D) + "*[deg]") + ")";
 			frmlRplc = "(" + frmlNoEquals.replaceAll("theta", String.valueOf(thetaR2D)) + ")";
-			frmlRplc = frmlRplc.replaceAll("--", "").replace("+ -", "-");
+			frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "+").replace("+ -", "-");
 			expression = new Expression(frmlRplc);
 			resultA = expression.calculate() * 22.5;	// Multiplier calibrates results to harmonize with other graphing methods
 			resultX = (resultA * Math.cos(thetaR2D));
@@ -1112,10 +1112,10 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			else  { mltplrY = " * 22.5"; }
 
 			// Final formatting
-			xEquation.replaceAll("--", "").replace("+ -", "-");
+			xEquation.replaceAll("--", "").replaceAll("- -", "+").replace("+ -", "-");
 			xEquation = "(" + xEquation + ")" + mltplrX;
 
-			yEquation.replaceAll("--", "").replace("+ -", "-");
+			yEquation.replaceAll("--", "").replaceAll("- -", "+").replace("+ -", "-");
 			yEquation = "(" + yEquation + ")" + mltplrY;
 		}
 
@@ -1180,6 +1180,14 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		Pattern patternOpsOnly = Pattern.compile(regexOpsOnly);
 		Matcher matcherOpsOnly = patternOpsOnly.matcher(inputNoWhitespace);
 
+		String regexOkAlone =  "[xyeXYE0-9]+";
+		Pattern patternOkAlone = Pattern.compile(regexOkAlone);
+		Matcher matcherOkAlone = patternOkAlone.matcher(inputNoWhitespace);
+
+		String regexWrongAlone =  "[zrZR]+";
+		Pattern patternWrongAlone = Pattern.compile(regexWrongAlone);
+		Matcher matcherWrongAlone = patternWrongAlone.matcher(inputNoWhitespace);
+
 		if (StringUtils.countMatches(inputNoWhitespace, "(") != StringUtils.countMatches(inputNoWhitespace, ")")) {
 			popupErrorMessage("Unbalanced parentheses.");
 		}
@@ -1195,7 +1203,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			&& (StringUtils.countMatches(inputNoWhitespace, "[phi]") == 0)) {
 			popupErrorMessage("Missing numbers / parameters.");
 		}
-		/*else if ((!matcherOpsOnly.find()) && (!("x".equalsIgnoreCase(equation)) && (!("y".equalsIgnoreCase(equation))))) {
+		/*else if ((!matcherOpsOnly.find()) && (!("e".equalsIgnoreCase(equation)))
+				&& (!("x".equalsIgnoreCase(equation)) && (!("y".equalsIgnoreCase(equation))))) {
 				popupErrorMessage("Missing operators.");
 		}*/
 		else { isInputOkay = true; }
