@@ -640,15 +640,15 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// (y^2)-(x*((x^4)-1)) = 0 // Burnside curve
 		// (((x^2)-1)^2) = ((y^2)*(y-1)*(y-2)*(y+5)) // Stirrup curve
 		// Left/right half only
-		// (x^4)+(y^4) = +-(3*x*(y^2)) // Bifoliate
+		// (x^4)+(y^4) = (3*x*(y^2)) // Bifoliate
 		// ((x^2)+(y^2))*(((x^2)+(y^2)+2*x)^2)-(9*((x^2)-(y^2))^2) = 0 // Scarabaeus curve
 		// y=x*cot(pi*x/.5) // Hippias' quadratic
 		// y=x*cot(x/.25) // Dinostratus quadratix
 		// (x^8)+(4*x^7)+(4*x^6*y^2)+(6*x^6)+(12*x^5*y^2)+(6*x^5)+(6*x^4*y^4)+(14*x^4*y^2)+(5*x^4)+(12*x^3*y^4)+(4*x^3*y^2)
 		// +(2*x^3)+(4*x^2*y^6)+(10*x^2*y^4)+(2*x^2*y^2)+(x^2)+(4*x*y^6)-(2*x*y^4)+(2*x*y^2)+(y^8)+(2*y^6)-(3*y^4)+(y^2)-(9) = 0 // Pear curve
 		// Upper/lower half only
-		// (y^2)*(4-(x^2)) = +-(((x^2) + 4*y - 4)^2) // Bicorn curve
-		// 4*(x^2)*((x^2)+(y^2)) - 8*(2*y - (x^2) - (y^2))^2 = 0 // Capricornoid
+		// (y^2)*(4-(x^2)) = (((x^2) + 4*y - 4)^2) // Bicorn curve
+		// 4*(x^2)*((x^2) + (y^2)) - 8*(2*y - (x^2) - (y^2))^2 = 0 // Capricornoid
 		// Single quadrant only
 		// (x^y) = (y^x)
 		// cot(x^y)=tan(y^x)
@@ -692,9 +692,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		if (showDetailMessages) { System.out.println("point:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA); }
 
 		if (levelLimit == level) { // Maintains most of plot precision but accommodates plot storage as well
-			if ((0 > resultA)) {
+			if ((0 > resultA) && (Double.NEGATIVE_INFINITY < resultA)) {
 				if (showMessages) { System.out.println("graphing:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA); }
-				System.out.println("graphing:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA);
 				grphcs2D.fillRect((int) (xCoordinate/2), (int) (yCoordinate/2), 2, 2);
 			}
 
@@ -826,6 +825,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 									break;	// (Needs work)
 						case 9 :	// Both upper squares filled, so draw from upper left bottom edge center to upper right bottom edge center
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
+									//grphcs2D.drawLine(qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
 									break;	// (Works)
 						case 10 :	// Upper left & lower right filled, which is ambiguous, so need to check if squares somehow connect
 						//			grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
@@ -834,7 +834,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
 									break;	// (Works)
 						case 12 :	// Both left squares filled, so draw from upper left right edge center to lower left right edge center
-									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY());
+									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY());
 									break;	// (Works)
 						case 13 :	// Lower right square empty, so draw from lower left right edge center to upper right left edge center
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
