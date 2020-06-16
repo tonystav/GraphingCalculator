@@ -5,13 +5,11 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.math.BigDecimal;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,8 +25,6 @@ import javax.swing.border.EtchedBorder;
 
 import org.apache.commons.lang3.StringUtils;
 import org.mariuszgromada.math.mxparser.Expression;
-
-import experiments.GraphingCalculator.graphThread;
 
 public class GraphingCalculator extends JPanel implements ItemListener {
 	private static final long serialVersionUID = 1L;
@@ -173,7 +169,12 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 	    	public void paint(Graphics g) {
 		    	super.paint(g);
 		    	Graphics2D graphics2d = (Graphics2D)g;
-
+		    	/*RenderingHints rh =
+		    		new RenderingHints(
+		    			RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON
+		    			RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE
+		    		);
+		    	graphics2d.setRenderingHints(rh);*/
 		    	graphics2d.setColor(Color.BLACK);
 		    	graphics2d.drawLine(0, graphCenter, displaySize, graphCenter);	// Horizontal graph center line
 		    	graphics2d.drawLine(graphCenter, 0, graphCenter, displaySize);	// Vertical graph center line
@@ -878,7 +879,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// sgn(cos(x)) or sgn(sin(x)) // Square wave
 		// sgn(Gamma(x)) // Square wave when x < 0, 1/-1 when x > 0
 
-		for (float i=-graphCenter*10; i<=graphCenter*10; i++) {
+		//for (float i=-graphCenter*10; i<=graphCenter*10; i++) {
+		for (float i=-displaySize; i<=displaySize; i++) {
 			float fi = i / 100;
 
 			// Vertical equation: f(y)
@@ -927,14 +929,17 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			}
 
 			grphcs2D.fillRect((int)resultX, (int)resultY, 1, 1);
-
+			if (showMessages) {
+				System.out.println("prvsX: " + prvsX + ", prvsY: " + prvsY + ", frmlRplc: " + frmlRplc + ", resultX: " + resultX + ", resultY: " + resultY );
+			}
 			// Interpolate extra point between basic points
 			grphcs2D.fillRect((int)(resultX - prvsX), (int)(resultY - prvsY), 1, 1);
 
 			// Connect any gaps. Check test conditions either too lenient or too restrictive
 			if (solidLines) {
 				// Next instruction produces occasional vertical connecting lines
-				if ((prvsX != 0 && prvsY != 0) && (Math.abs(resultY - prvsY) < displaySize) && (Math.abs(resultX - prvsX) < displaySize)) {
+				if ((prvsX != 0 && prvsY != 0 && resultX != 0 && resultY != 0)
+				&& (Math.abs(resultY - prvsY) < displaySize) && (Math.abs(resultX - prvsX) < displaySize)) {
 				// Next line produces fewer vertical connecting lines but also causes gaps in graph 
 				/*if ((prvsX != 0 && prvsY != 0)
 				&& ((Math.abs(resultY - prvsY) < displaySize) && Math.abs(resultX - prvsX) > 0)
