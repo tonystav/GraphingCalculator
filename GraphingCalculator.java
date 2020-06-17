@@ -483,14 +483,13 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		graphics2d = (Graphics2D)grphcs;
 		graphics2d.setStroke(new BasicStroke(2));
 
-		// Perform basic syntax checks
+		// Perform basic syntax checks. Use regular expressions to parse exponents properly
 		if (noInputErrors(equation)) {
-			// Use regular expressions to parse exponents properly
-			String frmlParsed = parseExponents(equation).replaceAll("X", "x").replaceAll("Y", "y");
+			String frmlParsed = parseExponents(equation);
 
 			// Determine what type of equation was entered
 			// Polar coordinates: 'r=f(θ)'
-			if ((StringUtils.countMatches(frmlParsed.trim(), "r=") > 0) || (StringUtils.countMatches(frmlParsed.trim(), "=r") > 0)) {
+			if ((StringUtils.countMatches(frmlParsed, "r=") > 0) || (StringUtils.countMatches(frmlParsed, "=r") > 0)) {
 				graphPolarEquation(frmlParsed, graphics2d);
 			}
 			// 2-parameters: x AND y
@@ -507,10 +506,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			// 1-parameter x OR y
 			else {
 				// Plain straight line: x=n OR y=n
-				if ((StringUtils.countMatches(frmlParsed, "x=") > 0)
-				|| (StringUtils.countMatches(frmlParsed, "=x") > 0)
-				|| (StringUtils.countMatches(frmlParsed, "y=") > 0)
-				|| (StringUtils.countMatches(frmlParsed, "=y") > 0)) {
+				if ((StringUtils.countMatches(frmlParsed, "x=") > 0) || (StringUtils.countMatches(frmlParsed, "=x") > 0)
+				|| (StringUtils.countMatches(frmlParsed, "y=") > 0) || (StringUtils.countMatches(frmlParsed, "=y") > 0)) {
 					graphStraightLine(frmlParsed, graphics2d);
 					if (graphPlusAndMinus) {graphStraightLine("-" + frmlParsed, graphics2d);}
 				}
@@ -935,15 +932,10 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			// Interpolate extra point between basic points
 			grphcs2D.fillRect((int)(resultX - prvsX), (int)(resultY - prvsY), 1, 1);
 
-			// Connect any gaps. Check test conditions either too lenient or too restrictive
+			// Connect any gaps
 			if (solidLines) {
-				// Next instruction produces occasional vertical connecting lines
 				if ((prvsX != 0 && prvsY != 0 && resultX != 0 && resultY != 0)
 				&& (Math.abs(resultY - prvsY) < displaySize) && (Math.abs(resultX - prvsX) < displaySize)) {
-				// Next line produces fewer vertical connecting lines but also causes gaps in graph 
-				/*if ((prvsX != 0 && prvsY != 0)
-				&& ((Math.abs(resultY - prvsY) < displaySize) && Math.abs(resultX - prvsX) > 0)
-				&& ((Math.abs(resultX - prvsX) < displaySize) && (Math.abs(resultY - prvsY) > 0))) {*/
 					grphcs2D.drawLine((int) (prvsX), (int) (prvsY), (int) (resultX), (int) (resultY));
 				}
 
@@ -1134,7 +1126,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		Expression expression;
 
 		// Loop through range of values to graph equations
-		for (float i=-(5*screenSize); i<=(5*screenSize); i++) {
+		//for (float i=-(5*screenSize); i<=(5*screenSize); i++) {
+		for (float i=-(displaySize); i<=(displaySize); i++) {
 			float fi = i / 150;
 
 			frmlRplc = xEquation.replaceAll("z", String.valueOf(fi));
@@ -1216,11 +1209,20 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		Pattern pattern = Pattern.compile(regex);
 		Matcher matcher = pattern.matcher(equation);
 		StringBuilder replacement = new StringBuilder();
+		String lower = new String();
 
 		while(matcher.find()) {
 			matcher.appendReplacement(replacement, "(" + matcher.group() + ")");
 		}
 		matcher.appendTail(replacement);
+
+		// Additional processing:
+		// 1. Convert all upper case parameters to lower case, to simplify subsequent tests elsewhere
+		// 2. Remove all white space characters (space, tab, etc.)
+		lower = replacement.toString().replaceAll("X", "x").replaceAll("Y", "y").replaceAll("Z",  "z")
+									.replaceAll("R", "r").replaceAll("E", "e").replaceAll("\\s+", "");
+		replacement.setLength(0);
+		replacement.append(lower);
 
 		return replacement.toString();
 	}
