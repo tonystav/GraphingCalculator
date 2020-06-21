@@ -679,11 +679,11 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// Need 2 versions of replacement equation so as to compensate for any functions included in equation
 		if (containsFunction(equation)) {
 			frmlRplc = equation.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
-					.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("- -", "\\+").replaceAll("\\+-", "\\+").replace("\\+ -", "-").replaceAll("\\+\\(\\-", "-\\(");
+					.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("- -", "\\+").replaceAll("\\+-", "\\+").replace("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
 		}
 		else {
 			frmlRplc = equation.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
-					.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("- -", "\\+").replaceAll("\\+-", "\\-").replace("\\+ -", "-").replaceAll("\\+\\(\\-", "-\\(");
+					.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("- -", "\\+").replaceAll("\\+-", "-").replace("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
 		}
 		if (showDetailMessages) { System.out.println("frmlRplc: " + frmlRplc); }
 
@@ -865,7 +865,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
     private static void graphStraightLine(String equation, Graphics2D grphcs2D) {
     	String frmlRplc = equation.replaceAll("x=", "").replaceAll("=x", "").replaceAll("y=", "").replaceAll("=y", "")
-    							.replaceAll("--", "").replaceAll("- -", "\\+").replace("\\+ -", "-").replaceAll("\\+\\(\\-", "-\\(");
+    							.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
 		Expression expression = new Expression(frmlRplc);
 		// Multiplier calibrates results to harmonize with other graphing methods
 		int result = (int) (expression.calculate() * 22.5);
@@ -884,7 +884,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		Expression expression;
 
     	// 1-parameter equation: 'y=f(x)', 'x=f(y)'
-		// asin(sin(x)) or asin(cos(x))
+		// asin(sin(x)) or asin(cos(x)) // Triangular wave
 		// (1-(x^2))^.5 // Circle
 		// sgn(tan(x)-cot(x)) // 2 parallel dashed lines
 		// sgn(cos(x)) or sgn(sin(x)) // Square wave
@@ -908,7 +908,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					frmlRplc = "(" + equation.replaceAll("y", String.valueOf(fi)) + ") * 50";
 				}
 
-				frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "\\+").replace("\\+ -", "-").replaceAll("\\+\\(\\-", "-\\(");
+				frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+-", "-").replaceAll("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
 				expression = new Expression(frmlRplc);
 				try {	// Needed because specific functions can cause stack overflow in math engine
 					resultX = (int) ((graphCenter) + expression.calculate());
@@ -929,7 +929,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					frmlRplc = "(" + equation.replaceAll("x", String.valueOf(fi)) + ") * 50";
 				}
 
-				frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "\\+").replace("\\+ -", "-").replaceAll("\\+\\(\\-", "-\\(");
+				frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+-", "-").replaceAll("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
 				expression = new Expression(frmlRplc);
 				try {	// Needed because specific functions can cause stack overflow in math engine
 					resultY = (int) ((graphCenter) - expression.calculate());
@@ -1019,7 +1019,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			float thetaR2D = (float) Math.toRadians(angle) / 10;
 			//frmlRplc = "(" + frmlNoEquals.replaceAll("theta", String.valueOf(thetaR2D) + "*[deg]") + ")";
 			frmlRplc = "(" + frmlNoEquals.replaceAll("theta", String.valueOf(thetaR2D)) + ")";
-			frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "\\+").replace("\\+ -", "-").replaceAll("\\+\\(\\-", "-\\(");
+			frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+ -", "-").replaceAll("\\+-", "-");//.replaceAll("\\+\\(\\-", "-\\(");
 			expression = new Expression(frmlRplc);
 			resultA = expression.calculate() * 22.5;	// Multiplier calibrates results to harmonize with other graphing methods
 			resultX = (resultA * Math.cos(thetaR2D));
@@ -1114,10 +1114,10 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			else  { mltplrY = " * 22.5"; }
 
 			// Final formatting
-			xEquation.replaceAll("--", "").replaceAll("- -", "\\+").replace("\\+ -", "-").replaceAll("\\+\\(\\-", "-\\(");
+			xEquation.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+ -", "-").replaceAll("\\+-", "-");//.replaceAll("\\+\\(-", "-(");
 			xEquation = "(" + xEquation + ")" + mltplrX;
 
-			yEquation.replaceAll("--", "").replaceAll("- -", "\\+").replace("\\+ -", "-").replaceAll("\\+\\(\\-", "-\\(");
+			yEquation.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+ -", "-").replaceAll("\\+-", "-");//.replaceAll("\\+\\(-", "-(");
 			yEquation = "(" + yEquation + ")" + mltplrY;
 		}
 
