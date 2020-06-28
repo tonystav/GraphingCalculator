@@ -38,15 +38,17 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		Graphics2D g2d;
 		QTGrid qtG = new QTGrid(graphCenter+1);
 		int lvl = 0, xCrdnt = 0, yCrdnt = 0;
+		boolean fnctn1Nmrc1 = false;
 
-    	graphThread(Graphics2D graphics2d, String frml1, String frml2, int level, int xCoordinate, int yCoordinate, QTGrid qtGrid) {
+    	graphThread(Graphics2D graphics2d, String frml1, String frml2, int level, int xCoord, int yCoord, QTGrid qtGrid, boolean f1n1) {
 			g2d = graphics2d;
 			equation1 = frml1;
 			equation2 = frml2;
 			lvl = level;
-			xCrdnt = xCoordinate;
-			yCrdnt = yCoordinate;
+			xCrdnt = xCoord;
+			yCrdnt = yCoord;
 			qtG = qtGrid;
+			fnctn1Nmrc1 = f1n1;
 		}
 
 	    public void start() {
@@ -78,7 +80,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					graph1ParameterEquation(equation1, g2d);
 					break;
 				default:
-					quadtreeStylePlot(equation1, g2d, lvl, xCrdnt, yCrdnt, qtG);
+					quadtreeStylePlot(equation1, g2d, lvl, xCrdnt, yCrdnt, qtG, fnctn1Nmrc1);
 					break;
 			}
 
@@ -515,11 +517,11 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				}
 				// 1-parameter linear: 'y=f(x)' OR 'x=f(y)'
 				else {
-					grphthrd = new graphThread(graphics2d, frmlParsed, null, -3, 0, 0, null);
+					grphthrd = new graphThread(graphics2d, frmlParsed, null, -3, 0, 0, null, false);
 					grphthrd.start();
 
 					if (graphPlusAndMinus) {
-						grphthrd = new graphThread(graphics2d, "-" + frmlParsed, null, -3, 0, 0, null);
+						grphthrd = new graphThread(graphics2d, "-" + frmlParsed, null, -3, 0, 0, null, false);
 						grphthrd.start();
 					}
 				}
@@ -531,6 +533,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		String leftEquation = "", rightEquation = "", xEquation = "", yEquation = "", frmNoEquals = "";
 		Integer gridSize = graphCenter+1; // Accommodates quadtree total but maps plot storage to graph size
 		QTGrid qtG = new QTGrid(gridSize);
+		boolean fnctn1SideNmrc1Side = true;
 
 		if (showMessages) { System.out.println("function: " + equation); }
 		//long startTime = System.currentTimeMillis();
@@ -553,6 +556,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		}
 		else {
 			if (showMessages) { System.out.println("3"); }
+			fnctn1SideNmrc1Side = false;
 			//frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
 
 			equation = equation.replaceAll(" ", "");
@@ -595,7 +599,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		int loopStart = screenSize/16, loopEnd = screenSize-loopStart, loopIncrement = loopStart*2;
 		for (int xCrdnt = loopStart; xCrdnt <= loopEnd; xCrdnt+=loopIncrement) {
 			for (int yCrdnt = loopStart; yCrdnt <= loopEnd; yCrdnt+=loopIncrement) {
-				grphthrd = new graphThread(graphics2d, frmNoEquals, null, 3, xCrdnt, yCrdnt, qtG);
+				grphthrd = new graphThread(graphics2d, frmNoEquals, null, 3, xCrdnt, yCrdnt, qtG, fnctn1SideNmrc1Side);
 				grphthrd.start();
 			}
 		}
@@ -608,13 +612,13 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     // graph function at coordinates if result is inside given threshold, subdivide screen into quadrants,
     // calculate new coordinates & next level, then call same method with new parameters for each quadrant (recursion).
     // NOTE: increase in maximum level improves precision but degrades performance time.
-    private static void quadtreeStylePlot(String equation, Graphics2D grphcs2D, int level, int xCoordinate, int yCoordinate, QTGrid qtG) {
+    private static void quadtreeStylePlot(String equation, Graphics2D grphcs2D, int level, int xCoord, int yCoord, QTGrid qtG, boolean f1sn1s) {
 		String frmlRplc = "";
 		int nextLevel = 0, levelLimit = 8, newDivisor = 0, newAmount = 0, ulx =0, uly=0, urx=0, ury=0, llx=0, lly=0, lrx=0, lry=0;
 		double x=0D, y=0D, resultA = 0D, rs = 0D;
 		Expression expression;
 
-		if (showDetailMessages) { System.out.println("level: " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate); }
+		if (showDetailMessages) { System.out.println("level: " + level + ", xCoordinate: " + xCoord + ", yCoordinate: " + yCoord); }
 
 		// Cartesian coordinates: test cases
 		// (((x^2) + (y^2) - 2)^3) / (x^2) = 4 // Horizontal Nephroid
@@ -626,8 +630,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// (x^2) + (y^2) = 20 // Circle
 		// ((x^2) ^ 4) + ((y^2) ^ 4) = 150 // Rectircle (round-cornered square)
 		// abs(x+y) + abs(x-y) = 10 // Square
-		// abs(abs(x)-abs(y)) = 2 // X sign / 2-directional v shapes (corners pointing inward)
-		// abs(abs(x + y) - abs(x - y)) = 2 // Plus sign / Inverted square (corners pointing inward)
+		// abs(abs(x) - abs(y)) = 2 // Saltire (X sign) / 2-directional v shapes (corners pointing inward)
+		// abs(abs(x+y) - abs(x-y)) = 2 // Cross (Plus sign) / Inverted square (corners pointing inward)
 		// abs(x+y) * abs(x-y) = 2 // 2-directional hyperbolic shapes
 		// sin((x^3)*(y^2)) - cos((x^2)*(y^3)) = 0 // Inverted quartered spiderweb
 		// (x^2)*(y^3) - (x^4)*y = y // Quartered hyperbolic curves pointing towards origin
@@ -672,35 +676,42 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// Use this to slow down plotting enough to see it while it happens
 		//try { TimeUnit.MILLISECONDS.sleep(250); } catch (InterruptedException e) { e.printStackTrace(); }
 
-		// NOTE: May need to use "Math.abs" here, together with "+-" -> "-" replacement.
-		x = (xCoordinate - displaySize) / 100D;
-		y = (displaySize - yCoordinate) / 100D;
-
-		// Need 2 versions of replacement equation so as to compensate for any functions included in equation
-		if (containsFunction(equation)) {
-			frmlRplc = equation.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
-					.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("- -", "\\+").replaceAll("\\+-", "\\+").replace("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
+		if ((yCoord > displaySize) && (f1sn1s) && (containsFunction(equation))) {
+			x = (displaySize - xCoord) / 100D;
 		}
 		else {
-			frmlRplc = equation.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y))
-					.replaceAll(" ",  "").replaceAll("--", "-").replaceAll("- -", "\\+").replaceAll("\\+-", "-").replace("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
+			x = (xCoord - displaySize) / 100D;
+		}
+		y = (displaySize - yCoord) / 100D;
+
+		// Need 2 versions of replacement equation so as to compensate for any functions included in equation
+		// Try adding test here, to check if 1 side of equation is numeric, to restrict condition to asymmetric plots that use functions
+		if (containsFunction(equation)) {
+		//if ((containsFunction(equation)) && (!f1sn1s)) {
+			// Needs work: "+" renders correctly symmetric plots with functions (squares, etc), but doesn't render correctly asymmetric function plots
+			frmlRplc = equation.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y)).replaceAll(" ",  "")
+					.replaceAll("--", "-").replaceAll("- -", "\\+").replaceAll("\\+-", "\\+").replace("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
+		}
+		else {
+			// Needs work: "-" renders correctly asymmetric plots with functions (parallel diagonal lines, etc), but doesn't render correctly symmetric function plots
+			frmlRplc = equation.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y)).replaceAll(" ",  "")
+					.replaceAll("--", "-").replaceAll("- -", "\\+").replaceAll("\\+-", "-").replace("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
 		}
 		if (showDetailMessages) { System.out.println("frmlRplc: " + frmlRplc); }
 
 		expression = new Expression(frmlRplc);
 		resultA = expression.calculate();
-		if (showDetailMessages) { System.out.println("point:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA); }
+		if (showDetailMessages) { System.out.println("point:: level : " + level + ", xCoordinate: " + xCoord + ", yCoordinate: " + yCoord + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA); }
 
 		if (levelLimit == level) { // Maintains most of plot precision but accommodates plot storage as well
-//System.out.println("level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA);
 			if ((0 > resultA) && (Double.NEGATIVE_INFINITY < resultA)) {
-				if (showMessages) { System.out.println("graphing:: level : " + level + ", xCoordinate: " + xCoordinate + ", yCoordinate: " + yCoordinate + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA); }
-				grphcs2D.fillRect((int) (xCoordinate/2), (int) (yCoordinate/2), 2, 2);
+				if (showMessages) { System.out.println("graphing:: level : " + level + ", xCoord: " + xCoord + ", yCoord: " + yCoord + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA); }
+				grphcs2D.fillRect((int) (xCoord/2), (int) (yCoord/2), 2, 2);
 			}
 
 			// Store all visited points: may need everything so as to find curve perimeter
-			qtG.setGridElement((xCoordinate/8)+1, (yCoordinate/8)+1, xCoordinate/2, yCoordinate/2, resultA);
-			if (showDetailMessages) { System.out.println("level: " + level + ", qtG:: x: " + xCoordinate/4 + ", y: " + yCoordinate/4 + ", QContent:: x: " + xCoordinate + ", y: " + yCoordinate + ", resultA: " + resultA); }
+			qtG.setGridElement((xCoord/8)+1, (yCoord/8)+1, xCoord/2, yCoord/2, resultA);
+			if (showDetailMessages) { System.out.println("level: " + level + ", qtG:: x: " + xCoord/4 + ", y: " + yCoord/4 + ", QContent:: x: " + xCoord + ", y: " + yCoord + ", resultA: " + resultA); }
 		}
 
 		if (level < levelLimit) {
@@ -711,20 +722,20 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			if (showDetailMessages) { System.out.println("nextLevel: " + nextLevel + ", newDivisor: " + newDivisor + ", newAmount: " + newAmount); }
 
 			// Process upper left quadrant
-			ulx = xCoordinate - newAmount; uly = yCoordinate - newAmount;
-			quadtreeStylePlot(equation, grphcs2D, nextLevel, ulx, uly, qtG);
+			ulx = xCoord - newAmount; uly = yCoord - newAmount;
+			quadtreeStylePlot(equation, grphcs2D, nextLevel, ulx, uly, qtG, f1sn1s);
 
 			// Process upper right quadrant
-			urx = xCoordinate + newAmount; ury = yCoordinate - newAmount;
-			quadtreeStylePlot(equation, grphcs2D, nextLevel, urx, ury, qtG);
+			urx = xCoord + newAmount; ury = yCoord - newAmount;
+			quadtreeStylePlot(equation, grphcs2D, nextLevel, urx, ury, qtG, f1sn1s);
 
 			// Process lower left quadrant
-			llx = xCoordinate - newAmount; lly = yCoordinate + newAmount;
-			quadtreeStylePlot(equation, grphcs2D, nextLevel, llx, lly, qtG);
+			llx = xCoord - newAmount; lly = yCoord + newAmount;
+			quadtreeStylePlot(equation, grphcs2D, nextLevel, llx, lly, qtG, f1sn1s);
 
 			// Process lower right quadrant
-			lrx = xCoordinate + newAmount; lry = yCoordinate + newAmount;
-			quadtreeStylePlot(equation, grphcs2D, nextLevel, lrx, lry, qtG);
+			lrx = xCoord + newAmount; lry = yCoord + newAmount;
+			quadtreeStylePlot(equation, grphcs2D, nextLevel, lrx, lry, qtG, f1sn1s);
 		}
     }
 
@@ -865,7 +876,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
     private static void graphStraightLine(String equation, Graphics2D grphcs2D) {
     	String frmlRplc = equation.replaceAll("x=", "").replaceAll("=x", "").replaceAll("y=", "").replaceAll("=y", "")
-    							.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
+    							.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+ -", "-").replaceAll("\\+-", "-");//.replaceAll("\\+\\(-", "-(");
 		Expression expression = new Expression(frmlRplc);
 		// Multiplier calibrates results to harmonize with other graphing methods
 		int result = (int) (expression.calculate() * 22.5);
@@ -1001,10 +1012,10 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			popupErrorMessage("Fixed value needed for this equation.");
 		}
 
-		grphthrd = new graphThread(graphics2d, frmlNoEquals, null, -1, 0, 0, null);
+		grphthrd = new graphThread(graphics2d, frmlNoEquals, null, -1, 0, 0, null, false);
 		grphthrd.start();
 		if (graphPlusAndMinus) { 
-			grphthrd = new graphThread(graphics2d, "-" + frmlNoEquals, null, -1, 0, 0, null);
+			grphthrd = new graphThread(graphics2d, "-" + frmlNoEquals, null, -1, 0, 0, null, false);
 			grphthrd.start();
 		}
     }
@@ -1121,14 +1132,14 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			yEquation = "(" + yEquation + ")" + mltplrY;
 		}
 
-		grphthrd = new graphThread(graphics2d, xEquation, yEquation, -2, 0, 0, null);
+		grphthrd = new graphThread(graphics2d, xEquation, yEquation, -2, 0, 0, null, false);
 		grphthrd.start();
 		if (graphPlusAndMinus) { 
-			grphthrd = new graphThread(graphics2d, "-" + xEquation, yEquation, -2, 0, 0, null);
+			grphthrd = new graphThread(graphics2d, "-" + xEquation, yEquation, -2, 0, 0, null, false);
 			grphthrd.start();
-			grphthrd = new graphThread(graphics2d, xEquation, "-" + yEquation, -2, 0, 0, null);
+			grphthrd = new graphThread(graphics2d, xEquation, "-" + yEquation, -2, 0, 0, null, false);
 			grphthrd.start();
-			grphthrd = new graphThread(graphics2d, "-" + xEquation, "-" + yEquation, -2, 0, 0, null);
+			grphthrd = new graphThread(graphics2d, "-" + xEquation, "-" + yEquation, -2, 0, 0, null, false);
 			grphthrd.start();
 		}
     }
@@ -1140,8 +1151,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		Expression expression;
 
 		// Loop through range of values to graph equations
-		//for (float i=-(5*screenSize); i<=(5*screenSize); i++) {
-		for (float i=-(4*displaySize); i<=(4*displaySize); i++) {
+		for (float i=-(4*screenSize); i<=(4*screenSize); i++) {
+		//for (float i=-(4*displaySize); i<=(4*displaySize); i++) {
 			float fi = i / 150;
 
 			frmlRplc = xEquation.replaceAll("z", String.valueOf(fi));
@@ -1244,7 +1255,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 	public static String replaceSigns(String equation) {
 		String replaceSigns = new String();
 
-		
+		replaceSigns = equation.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+ -", "-").replaceAll("\\+-", "-");
 
 		return replaceSigns;
 	}
@@ -1299,6 +1310,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     // Checks whether equation uses any of listed operations. Include new operations here if add any to keyboard
     public static boolean containsFunction(String inputString) {
     	String[] operations = {"sin", "cos", "tan", "csc", "sec", "cot", "abs", "mod", "sgn", "ln", "log10", "floor", "ceil", "Gamma"};
+    	// Test: some functions using 'abs' are skewed when 'abs' is in this list, but most functions need 'abs' here
+    	//String[] operations = {"sin", "cos", "tan", "csc", "sec", "cot", "mod", "sgn", "ln", "log10", "floor", "ceil", "Gamma"};
     	boolean hasOperation = false;
 
     	for (String prtr : operations) {
