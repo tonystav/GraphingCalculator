@@ -34,14 +34,16 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 	public static class graphThread implements Runnable {
 	    private Thread gt;
-		String equation1, equation2;
+		String graphType, equation1, equation2;
 		Graphics2D g2d;
 		QTGrid qtG = new QTGrid(graphCenter+1);
 		int lvl = 0, xCrdnt = 0, yCrdnt = 0;
 		boolean fnctn1Nmrc1 = false;
 
-    	graphThread(Graphics2D graphics2d, String frml1, String frml2, int level, int xCoord, int yCoord, QTGrid qtGrid, boolean f1n1) {
+		// 'grphTp' parameter states graph type explicitly; 'level' parameter is 0 for methods other than 'quadTreeStylePlot'
+    	graphThread(Graphics2D graphics2d, String grphTp, String frml1, String frml2, int level, int xCoord, int yCoord, QTGrid qtGrid, boolean f1n1) {
 			g2d = graphics2d;
+			graphType = grphTp;
 			equation1 = frml1;
 			equation2 = frml2;
 			lvl = level;
@@ -69,15 +71,15 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				startTime = System.currentTimeMillis();
 			}
 			//System.out.println("run:: Active threads: " + Thread.activeCount());
-			switch (lvl) {
-				case -1:
+			switch (graphType) {
+				case "polar":
 					plotPolarGraph(equation1, g2d);
 					break;
-				case -2:
+				case "parametric":
 					plotParametricGraph(equation1, equation2, g2d);
 					break;
-				case -3:
-					graph1ParameterEquation(equation1, g2d);
+				case "single":
+					graph1ParameterEquation(equation1, g2d, fnctn1Nmrc1);
 					break;
 				default:
 					quadtreeStylePlot(equation1, g2d, lvl, xCrdnt, yCrdnt, qtG, fnctn1Nmrc1);
@@ -517,11 +519,12 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				}
 				// 1-parameter linear: 'y=f(x)' OR 'x=f(y)'
 				else {
-					grphthrd = new graphThread(graphics2d, frmlParsed, null, -3, 0, 0, null, false);
+					//frmlParsed = rearrangeEquation(frmlParsed);
+					grphthrd = new graphThread(graphics2d, "single", frmlParsed, null, 0, 0, 0, null, false);
 					grphthrd.start();
 
 					if (graphPlusAndMinus) {
-						grphthrd = new graphThread(graphics2d, "-" + frmlParsed, null, -3, 0, 0, null, false);
+						grphthrd = new graphThread(graphics2d, "single", "-" + frmlParsed, null, 0, 0, 0, null, false);
 						grphthrd.start();
 					}
 				}
@@ -599,7 +602,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		int loopStart = screenSize/16, loopEnd = screenSize-loopStart, loopIncrement = loopStart*2;
 		for (int xCrdnt = loopStart; xCrdnt <= loopEnd; xCrdnt+=loopIncrement) {
 			for (int yCrdnt = loopStart; yCrdnt <= loopEnd; yCrdnt+=loopIncrement) {
-				grphthrd = new graphThread(graphics2d, frmNoEquals, null, 3, xCrdnt, yCrdnt, qtG, fnctn1SideNmrc1Side);
+				grphthrd = new graphThread(graphics2d, "cartesian", frmNoEquals, null, 3, xCrdnt, yCrdnt, qtG, fnctn1SideNmrc1Side);
 				grphthrd.start();
 			}
 		}
@@ -676,6 +679,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// Use this to slow down plotting enough to see it while it happens
 		//try { TimeUnit.MILLISECONDS.sleep(250); } catch (InterruptedException e) { e.printStackTrace(); }
 
+		// Test here to check if 1 side of equation is numeric, to compensate for asymmetric plots that use functions
 		if ((yCoord > displaySize) && (f1sn1s) && (containsFunction(equation))) {
 			x = (displaySize - xCoord) / 100D;
 		}
@@ -685,7 +689,6 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		y = (displaySize - yCoord) / 100D;
 
 		// Need 2 versions of replacement equation so as to compensate for any functions included in equation
-		// Try adding test here, to check if 1 side of equation is numeric, to restrict condition to asymmetric plots that use functions
 		if (containsFunction(equation)) {
 		//if ((containsFunction(equation)) && (!f1sn1s)) {
 			// Needs work: "+" renders correctly symmetric plots with functions (squares, etc), but doesn't render correctly asymmetric function plots
@@ -889,7 +892,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     	}
     }
 
-    private static void graph1ParameterEquation(String equation, Graphics2D grphcs2D) {
+    private static void graph1ParameterEquation(String equation, Graphics2D grphcs2D, boolean f1sn1s) {
 		String frmlRplc = "";
 		double resultX = 0, resultY = 0, prvsX = 0, prvsY = 0;
 		Expression expression;
@@ -904,6 +907,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		//for (float i=-graphCenter*10; i<=graphCenter*10; i++) {
 		for (float i=-displaySize; i<=displaySize; i++) {
 			float fi = i / 100;
+
+			// NOTE: Use string processing from 'graphCartesianFunction' method here: need to rearrange equations having equals sign ('=')
 
 			// Vertical equation: f(y)
 			if (equation.contains("y")) {
@@ -923,6 +928,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				expression = new Expression(frmlRplc);
 				try {	// Needed because specific functions can cause stack overflow in math engine
 					resultX = (int) ((graphCenter) + expression.calculate());
+System.out.println("equation: '" + equation + "'" + ", fi: '" + fi + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", expression: '" + expression + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", resultX: '" + resultX + "'");
 				}
 				catch (java.lang.StackOverflowError sofe) {
 					continue;
@@ -944,6 +950,13 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				expression = new Expression(frmlRplc);
 				try {	// Needed because specific functions can cause stack overflow in math engine
 					resultY = (int) ((graphCenter) - expression.calculate());
+					/*if ((expression.calculate() < graphCenter) && (containsFunction(equation))) {// && (f1sn1s)
+						resultY = (graphCenter - expression.calculate());
+					}
+					else {
+						resultY = (expression.calculate() - graphCenter);
+					}*/
+System.out.println("equation: '" + equation + "'" + ", fi: '" + fi + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", expression: '" + expression + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", resultX: '" + resultX + "'");
 				}
 				catch (java.lang.StackOverflowError sofe) {
 					continue;
@@ -1012,10 +1025,10 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			popupErrorMessage("Fixed value needed for this equation.");
 		}
 
-		grphthrd = new graphThread(graphics2d, frmlNoEquals, null, -1, 0, 0, null, false);
+		grphthrd = new graphThread(graphics2d, "polar", frmlNoEquals, null, 0, 0, 0, null, false);
 		grphthrd.start();
 		if (graphPlusAndMinus) { 
-			grphthrd = new graphThread(graphics2d, "-" + frmlNoEquals, null, -1, 0, 0, null, false);
+			grphthrd = new graphThread(graphics2d, "polar", "-" + frmlNoEquals, null, 0, 0, 0, null, false);
 			grphthrd.start();
 		}
     }
@@ -1132,14 +1145,14 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			yEquation = "(" + yEquation + ")" + mltplrY;
 		}
 
-		grphthrd = new graphThread(graphics2d, xEquation, yEquation, -2, 0, 0, null, false);
+		grphthrd = new graphThread(graphics2d, "parametric", xEquation, yEquation, 0, 0, 0, null, false);
 		grphthrd.start();
 		if (graphPlusAndMinus) { 
-			grphthrd = new graphThread(graphics2d, "-" + xEquation, yEquation, -2, 0, 0, null, false);
+			grphthrd = new graphThread(graphics2d, "parametric", "-" + xEquation, yEquation, 0, 0, 0, null, false);
 			grphthrd.start();
-			grphthrd = new graphThread(graphics2d, xEquation, "-" + yEquation, -2, 0, 0, null, false);
+			grphthrd = new graphThread(graphics2d, "parametric", xEquation, "-" + yEquation, 0, 0, 0, null, false);
 			grphthrd.start();
-			grphthrd = new graphThread(graphics2d, "-" + xEquation, "-" + yEquation, -2, 0, 0, null, false);
+			grphthrd = new graphThread(graphics2d, "parametric", "-" + xEquation, "-" + yEquation, 0, 0, 0, null, false);
 			grphthrd.start();
 		}
     }
@@ -1250,6 +1263,57 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		replacement.append(lower);
 
 		return replacement.toString();
+	}
+
+	public static String rearrangeEquation(String equation) {
+		String leftEquation = "", rightEquation = "", frmNoEquals = "";
+		boolean fnctn1SideNmrc1Side = true;
+
+		// String processing on equation occurs outside of Cartesian processing because quadtree algorithm is recursive
+		if (StringUtils.isNumeric(StringUtils.substringBefore(equation, "="))) {
+			if (showMessages) { System.out.println("1"); }
+			frmNoEquals = "(" + StringUtils.substringAfter(equation, "=") + ") - (" + StringUtils.substringBefore(equation, "=") + ")";
+		}
+		else if (StringUtils.isNumeric(StringUtils.substringAfter(equation, "="))) {
+			if (showMessages) { System.out.println("2"); }
+			frmNoEquals = "(" + StringUtils.substringBefore(equation, "=") + ") - (" + StringUtils.substringAfter(equation, "=") + ")";
+		}
+		else {
+			if (showMessages) { System.out.println("3"); }
+			fnctn1SideNmrc1Side = false;
+			//frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
+
+			equation = equation.replaceAll(" ", "");
+			// Store each equation separately
+			leftEquation = StringUtils.substringBefore(equation, "=");
+			rightEquation = StringUtils.substringAfter(equation, "=");
+
+			// Determine signs left & right equations, then rearrange into single equation. Replace
+			// double negative (subtraction of negative) with addition of positive (mathematically equivalent)
+
+			// Negatives on both sides, so replace both & move right side to left
+			if ((isExpressionNegative(leftEquation)) && (isExpressionNegative(rightEquation))) {
+				frmNoEquals = ("(" + reverseExpressionSign(StringUtils.substringBefore(equation, "=")) + ") - ("
+						+ reverseExpressionSign(StringUtils.substringAfter(equation, "=")) + ")");
+			}
+			// Left side negative, so reverse sign & append to right side
+			else if (isExpressionNegative(leftEquation)) {
+				frmNoEquals = ("(" + StringUtils.substringAfter(equation, "=") + ") + ("
+							+ reverseExpressionSign(StringUtils.substringBefore(equation, "=")) + ")");
+			}
+			// Right side negative, so reverse sign & append to left side
+			else if (isExpressionNegative(rightEquation)) {
+				frmNoEquals = ("(" + StringUtils.substringBefore(equation, "=") + ") + ("
+							+ reverseExpressionSign(StringUtils.substringAfter(equation, "=")) + ")");
+			}
+			// Neither side negative, so append right side, as negative, to left side
+			else {
+				frmNoEquals = "(" + StringUtils.substringBefore(equation, "=") + ") - (" + StringUtils.substringAfter(equation, "=") + ")";
+			}
+		}
+		if (showMessages) { System.out.println("frmNoEquals: " + frmNoEquals); }
+
+		return frmNoEquals;
 	}
 
 	public static String replaceSigns(String equation) {
