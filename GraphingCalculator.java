@@ -109,8 +109,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     private static Double targetValue = 0D;
     private static Graphics grphcs;
     private static Graphics2D graphics2d;
-    private static Boolean solidLines = false, clearBetweenPlots = true, graphPlusAndMinus = false,
-    						showMessages = false, showDetailMessages = false;
+    private static Boolean solidLines = false, clearBetweenPlots = true, graphPlusAndMinus = false, showMessages = true;
 
     // Thread parameters
     private static graphThread grphthrd;
@@ -519,6 +518,12 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				}
 				// 1-parameter linear: 'y=f(x)' OR 'x=f(y)'
 				else {
+					// Plain straight lines created by functions (abs, tan, etc.)
+					// Check if should be separate method or included somehow in another method
+					/*if () {
+						graph1ParameterWithFunction();
+					}
+					*/
 					//frmlParsed = rearrangeEquation(frmlParsed);
 					grphthrd = new graphThread(graphics2d, "single", frmlParsed, null, 0, 0, 0, null, false);
 					grphthrd.start();
@@ -598,7 +603,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// 2. Use marching squares algorithm to create graph from array list
 		marchingSquares(graphics2d, qtG);*/
 
-		// Multithreading: Spawn 1 thread for each of the level 3 sections (64 total): speeds up processing by 8x
+		// Multithreading: Spawn 1 thread for each of the level 3 sections (64 total): speeds up processing by 8x. Total plot time: ~ 6 seconds.
 		int loopStart = screenSize/16, loopEnd = screenSize-loopStart, loopIncrement = loopStart*2;
 		for (int xCrdnt = loopStart; xCrdnt <= loopEnd; xCrdnt+=loopIncrement) {
 			for (int yCrdnt = loopStart; yCrdnt <= loopEnd; yCrdnt+=loopIncrement) {
@@ -621,7 +626,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		double x=0D, y=0D, resultA = 0D, rs = 0D;
 		Expression expression;
 
-		if (showDetailMessages) { System.out.println("level: " + level + ", xCoordinate: " + xCoord + ", yCoordinate: " + yCoord); }
+		if (showMessages) { System.out.println("level: " + level + ", xCoordinate: " + xCoord + ", yCoordinate: " + yCoord); }
 
 		// Cartesian coordinates: test cases
 		// (((x^2) + (y^2) - 2)^3) / (x^2) = 4 // Horizontal Nephroid
@@ -700,11 +705,11 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			frmlRplc = equation.replaceAll("x", String.valueOf(x)).replaceAll("y", String.valueOf(y)).replaceAll(" ",  "")
 					.replaceAll("--", "-").replaceAll("- -", "\\+").replaceAll("\\+-", "-").replace("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
 		}
-		if (showDetailMessages) { System.out.println("frmlRplc: " + frmlRplc); }
+		if (showMessages) { System.out.println("frmlRplc: " + frmlRplc); }
 
 		expression = new Expression(frmlRplc);
 		resultA = expression.calculate();
-		if (showDetailMessages) { System.out.println("point:: level : " + level + ", xCoordinate: " + xCoord + ", yCoordinate: " + yCoord + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA); }
+		if (showMessages) { System.out.println("point:: level : " + level + ", xCoordinate: " + xCoord + ", yCoordinate: " + yCoord + ", x: " + x + ", y: " + y + ", frmlRplc: " + frmlRplc + ", resultA: " + resultA); }
 
 		if (levelLimit == level) { // Maintains most of plot precision but accommodates plot storage as well
 			if ((0 > resultA) && (Double.NEGATIVE_INFINITY < resultA)) {
@@ -714,7 +719,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 			// Store all visited points: may need everything so as to find curve perimeter
 			qtG.setGridElement((xCoord/8)+1, (yCoord/8)+1, xCoord/2, yCoord/2, resultA);
-			if (showDetailMessages) { System.out.println("level: " + level + ", qtG:: x: " + xCoord/4 + ", y: " + yCoord/4 + ", QContent:: x: " + xCoord + ", y: " + yCoord + ", resultA: " + resultA); }
+			if (showMessages) { System.out.println("level: " + level + ", qtG:: x: " + xCoord/4 + ", y: " + yCoord/4 + ", QContent:: x: " + xCoord + ", y: " + yCoord + ", resultA: " + resultA); }
 		}
 
 		if (level < levelLimit) {
@@ -722,7 +727,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			nextLevel = level + 1;
 			newDivisor = (int) Math.pow(2D, nextLevel);
 			newAmount = displaySize / newDivisor;
-			if (showDetailMessages) { System.out.println("nextLevel: " + nextLevel + ", newDivisor: " + newDivisor + ", newAmount: " + newAmount); }
+			if (showMessages) { System.out.println("nextLevel: " + nextLevel + ", newDivisor: " + newDivisor + ", newAmount: " + newAmount); }
 
 			// Process upper left quadrant
 			ulx = xCoord - newAmount; uly = yCoord - newAmount;
@@ -773,7 +778,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     			else { nextLine.append(' '); }
     		}
 
-			if (showDetailMessages) { System.out.println(nextLine); }
+			if (showMessages) { System.out.println(nextLine); }
 			nextLine.setLength(0);
     	}*/
 
@@ -805,7 +810,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				//nextLine.append(' ');
 	    	}
 
-			if (showDetailMessages) { System.out.println(nextLine); }
+			if (showMessages) { System.out.println(nextLine); }
 			//nextLine.setLength(0);
 		}
 
@@ -894,7 +899,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
     private static void graph1ParameterEquation(String equation, Graphics2D grphcs2D, boolean f1sn1s) {
 		String frmlRplc = "";
-		double resultX = 0, resultY = 0, prvsX = 0, prvsY = 0;
+		double resultX = 0, resultY = 0, prvsX = 0, prvsY = 0, targetValue = 0;
 		Expression expression;
 
     	// 1-parameter equation: 'y=f(x)', 'x=f(y)'
@@ -907,8 +912,6 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		//for (float i=-graphCenter*10; i<=graphCenter*10; i++) {
 		for (float i=-displaySize; i<=displaySize; i++) {
 			float fi = i / 100;
-
-			// NOTE: Use string processing from 'graphCartesianFunction' method here: need to rearrange equations having equals sign ('=')
 
 			// Vertical equation: f(y)
 			if (equation.contains("y")) {
@@ -926,9 +929,10 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 				frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+-", "-").replaceAll("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
 				expression = new Expression(frmlRplc);
+
 				try {	// Needed because specific functions can cause stack overflow in math engine
 					resultX = (int) ((graphCenter) + expression.calculate());
-System.out.println("equation: '" + equation + "'" + ", fi: '" + fi + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", expression: '" + expression + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", resultX: '" + resultX + "'");
+					if (showMessages) { System.out.println("equation: '" + equation + "'" + ", fi: '" + fi + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", resultX: '" + resultX + "'"); }
 				}
 				catch (java.lang.StackOverflowError sofe) {
 					continue;
@@ -948,15 +952,10 @@ System.out.println("equation: '" + equation + "'" + ", fi: '" + fi + "'" + ", fr
 
 				frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+-", "-").replaceAll("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
 				expression = new Expression(frmlRplc);
+
 				try {	// Needed because specific functions can cause stack overflow in math engine
 					resultY = (int) ((graphCenter) - expression.calculate());
-					/*if ((expression.calculate() < graphCenter) && (containsFunction(equation))) {// && (f1sn1s)
-						resultY = (graphCenter - expression.calculate());
-					}
-					else {
-						resultY = (expression.calculate() - graphCenter);
-					}*/
-System.out.println("equation: '" + equation + "'" + ", fi: '" + fi + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", expression: '" + expression + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", resultX: '" + resultX + "'");
+					if (showMessages) { System.out.println("equation: '" + equation + "'" + ", fi: '" + fi + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", resultY: '" + resultY + "'"); }
 				}
 				catch (java.lang.StackOverflowError sofe) {
 					continue;
@@ -1263,57 +1262,6 @@ System.out.println("equation: '" + equation + "'" + ", fi: '" + fi + "'" + ", fr
 		replacement.append(lower);
 
 		return replacement.toString();
-	}
-
-	public static String rearrangeEquation(String equation) {
-		String leftEquation = "", rightEquation = "", frmNoEquals = "";
-		boolean fnctn1SideNmrc1Side = true;
-
-		// String processing on equation occurs outside of Cartesian processing because quadtree algorithm is recursive
-		if (StringUtils.isNumeric(StringUtils.substringBefore(equation, "="))) {
-			if (showMessages) { System.out.println("1"); }
-			frmNoEquals = "(" + StringUtils.substringAfter(equation, "=") + ") - (" + StringUtils.substringBefore(equation, "=") + ")";
-		}
-		else if (StringUtils.isNumeric(StringUtils.substringAfter(equation, "="))) {
-			if (showMessages) { System.out.println("2"); }
-			frmNoEquals = "(" + StringUtils.substringBefore(equation, "=") + ") - (" + StringUtils.substringAfter(equation, "=") + ")";
-		}
-		else {
-			if (showMessages) { System.out.println("3"); }
-			fnctn1SideNmrc1Side = false;
-			//frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
-
-			equation = equation.replaceAll(" ", "");
-			// Store each equation separately
-			leftEquation = StringUtils.substringBefore(equation, "=");
-			rightEquation = StringUtils.substringAfter(equation, "=");
-
-			// Determine signs left & right equations, then rearrange into single equation. Replace
-			// double negative (subtraction of negative) with addition of positive (mathematically equivalent)
-
-			// Negatives on both sides, so replace both & move right side to left
-			if ((isExpressionNegative(leftEquation)) && (isExpressionNegative(rightEquation))) {
-				frmNoEquals = ("(" + reverseExpressionSign(StringUtils.substringBefore(equation, "=")) + ") - ("
-						+ reverseExpressionSign(StringUtils.substringAfter(equation, "=")) + ")");
-			}
-			// Left side negative, so reverse sign & append to right side
-			else if (isExpressionNegative(leftEquation)) {
-				frmNoEquals = ("(" + StringUtils.substringAfter(equation, "=") + ") + ("
-							+ reverseExpressionSign(StringUtils.substringBefore(equation, "=")) + ")");
-			}
-			// Right side negative, so reverse sign & append to left side
-			else if (isExpressionNegative(rightEquation)) {
-				frmNoEquals = ("(" + StringUtils.substringBefore(equation, "=") + ") + ("
-							+ reverseExpressionSign(StringUtils.substringAfter(equation, "=")) + ")");
-			}
-			// Neither side negative, so append right side, as negative, to left side
-			else {
-				frmNoEquals = "(" + StringUtils.substringBefore(equation, "=") + ") - (" + StringUtils.substringAfter(equation, "=") + ")";
-			}
-		}
-		if (showMessages) { System.out.println("frmNoEquals: " + frmNoEquals); }
-
-		return frmNoEquals;
 	}
 
 	public static String replaceSigns(String equation) {
