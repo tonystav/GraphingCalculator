@@ -26,6 +26,7 @@ import javax.swing.JTextArea;
 import javax.swing.border.EtchedBorder;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.mariuszgromada.math.mxparser.Expression;
 
 public class GraphingCalculator extends JPanel implements ItemListener {
@@ -493,38 +494,36 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			String frmlParsed = parseExponents(equation);
 
 			// Determine what type of equation was entered
-			// Polar coordinates: 'r=f(θ)'
+			// Category: Polar coordinates: 'r=f(θ)'
 			if ((StringUtils.countMatches(frmlParsed, "r=") > 0) || (StringUtils.countMatches(frmlParsed, "=r") > 0)) {
 				graphPolarEquation(frmlParsed, graphics2d);
 			}
-			// 2-parameters: x AND y
+			// Category: 2-parameters: x AND y
 			else if ((StringUtils.countMatches(frmlParsed, "x") > 0) && (StringUtils.countMatches(frmlParsed, "y") > 0)) {
-				// Parametric: x=f1(z) AND y=f2(z)
+				// Parametric: Parameters used in separate functions, x=f1(z) AND y=f2(z), but results combined into final plot
 				if (StringUtils.countMatches(frmlParsed, ";") > 0) {
 					graphParametricEquations(frmlParsed, graphics2d);
 				}
-				// Cartesian: z=f(x,y)
+				// Cartesian: Parameters combined into 1 function, z=f(x,y)
 				else {
-					graphCartesianFunction(graphics2d, frmlParsed);
+					graphCartesianFunction(frmlParsed, graphics2d);
 				}
 			}
-			// 1-parameter x OR y
+			// Category: 1-parameter x OR y
 			else {
 				// Plain straight line: x=n OR y=n
 				if ((StringUtils.countMatches(frmlParsed, "x=") > 0) || (StringUtils.countMatches(frmlParsed, "=x") > 0)
 				|| (StringUtils.countMatches(frmlParsed, "y=") > 0) || (StringUtils.countMatches(frmlParsed, "=y") > 0)) {
 					graphStraightLine(frmlParsed, graphics2d);
-					if (graphPlusAndMinus) {graphStraightLine("-" + frmlParsed, graphics2d);}
+					if (graphPlusAndMinus) { graphStraightLine("-" + frmlParsed, graphics2d); }
 				}
-				// 1-parameter linear: 'y=f(x)' OR 'x=f(y)'
+				// Multiple straight lines created by functions (abs, tan, etc.)
+				else if ((containsFunction(frmlParsed))
+					&& (StringUtils.isNumeric(StringUtils.substringBefore(equation, "="))) || (StringUtils.isNumeric(StringUtils.substringAfter(equation, "=")))) {
+					graphMultipleLines(frmlParsed, graphics2d);
+				}
+				// 1-parameter used in 1 function: 'y=f(x)' OR 'x=f(y)'
 				else {
-					// Plain straight lines created by functions (abs, tan, etc.)
-					// Check if should be separate method or included somehow in another method
-					/*if () {
-						graph1ParameterWithFunction();
-					}
-					*/
-					//frmlParsed = rearrangeEquation(frmlParsed);
 					grphthrd = new graphThread(graphics2d, "single", frmlParsed, null, 0, 0, 0, null, false);
 					grphthrd.start();
 
@@ -537,7 +536,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		}
     }
 
-    private static void graphCartesianFunction(Graphics2D grphcs2D, String equation) {
+    private static void graphCartesianFunction(String equation, Graphics2D grphcs2D) {
 		String leftEquation = "", rightEquation = "", xEquation = "", yEquation = "", frmNoEquals = "";
 		Integer gridSize = graphCenter+1; // Accommodates quadtree total but maps plot storage to graph size
 		QTGrid qtG = new QTGrid(gridSize);
@@ -603,7 +602,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// 2. Use marching squares algorithm to create graph from array list
 		marchingSquares(graphics2d, qtG);*/
 
-		// Multithreading: Spawn 1 thread for each of the level 3 sections (64 total): speeds up processing by 8x. Total plot time: ~ 6 seconds.
+		// Multithreading: Spawn 1 thread for each level 3 section (64 total): speeds up processing by 8x. Total plot time: ~ 6 seconds.
 		int loopStart = screenSize/16, loopEnd = screenSize-loopStart, loopIncrement = loopStart*2;
 		for (int xCrdnt = loopStart; xCrdnt <= loopEnd; xCrdnt+=loopIncrement) {
 			for (int yCrdnt = loopStart; yCrdnt <= loopEnd; yCrdnt+=loopIncrement) {
@@ -897,9 +896,53 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     	}
     }
 
+    // Needs work: still not graphing tan(x)=N correctly
+    private static void graphMultipleLines(String equation, Graphics2D grphcs2D) {
+    	String frmlRplc = equation.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+ -", "-").replaceAll("\\+-", "-");//.replaceAll("\\+\\(-", "-(");
+    	int target = 0, result = 0;
+		Expression expression;
+
+    	if (StringUtils.isNumeric(StringUtils.substringBefore(equation, "="))) {
+			if (showMessages) { System.out.println("1"); }
+			frmlRplc = StringUtils.substringAfter(equation, "=");
+			// Multiplier calibrates results to harmonize with other graphing methods
+			target = (int) (NumberUtils.toDouble(StringUtils.substringBefore(equation, "=")) * 22.5);
+		}
+		else if (StringUtils.isNumeric(StringUtils.substringAfter(equation, "="))) {
+			if (showMessages) { System.out.println("2"); }
+			frmlRplc = StringUtils.substringBefore(equation, "=");
+			// Multiplier calibrates results to harmonize with other graphing methods
+			target = (int) (NumberUtils.toDouble(StringUtils.substringAfter(equation, "=")) * 22.5);
+		}
+
+    	if (frmlRplc.contains("x")) {
+    		for (int i=-displaySize; i<=displaySize; i++) {
+    			expression = new Expression(frmlRplc.replaceAll("x", String.valueOf(i)));
+    			result = (int) (expression.calculate() * 22.5);
+    			System.out.println("equation: '" + equation + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", target: '" + target + "'" + ", i: '" + i + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", result: '" + result + "'");
+
+    			if (result == target) {
+    				grphcs2D.drawLine((graphCenter) + (int) (i * 22.5), 0, (graphCenter) + (int) (i * 22.5), displaySize);
+    			}
+    		}
+    	}
+    	else {
+    		for (int i=-displaySize; i<=displaySize; i++) {
+    			expression = new Expression(frmlRplc.replaceAll("y", String.valueOf(i)));
+    			result = (int) (expression.calculate() * 22.5);
+
+    			System.out.println("equation: '" + equation + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", target: '" + target + "'" + ", i: '" + i + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", result: '" + result + "'");
+
+    			if (result == target) {
+        			grphcs2D.drawLine(0, (graphCenter) - (int) (i * 22.5), displaySize, (graphCenter) - (int) (i * 22.5));
+    			}
+    		}
+    	}
+    }
+
     private static void graph1ParameterEquation(String equation, Graphics2D grphcs2D, boolean f1sn1s) {
 		String frmlRplc = "";
-		double resultX = 0, resultY = 0, prvsX = 0, prvsY = 0, targetValue = 0;
+		double resultX = 0, resultY = 0, prvsX = 0, prvsY = 0;
 		Expression expression;
 
     	// 1-parameter equation: 'y=f(x)', 'x=f(y)'
