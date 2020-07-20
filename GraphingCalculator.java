@@ -517,10 +517,15 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					graphStraightLine(frmlParsed, graphics2d);
 					if (graphPlusAndMinus) { graphStraightLine("-" + frmlParsed, graphics2d); }
 				}
-				// Multiple straight lines created by functions (abs, tan, etc.)
-				else if ((containsFunction(frmlParsed))
-					&& (StringUtils.isNumeric(StringUtils.substringBefore(equation, "="))) || (StringUtils.isNumeric(StringUtils.substringAfter(equation, "=")))) {
-					graphMultipleLines(frmlParsed, graphics2d);
+				// Multiple straight lines created by functions (abs, tan, x^N, y^N, etc.)
+				// Idea: add logic here to invoke 'graphCartesianFunction' method when equation has 1 parameter AND numeric target
+				// (ex. x=N or y=N, f(x)=N, f(y)=N)
+				else if (((StringUtils.countMatches(frmlParsed, "x") > 0) &&
+						(StringUtils.isNumeric(StringUtils.substringBefore(equation, "="))) || (StringUtils.isNumeric(StringUtils.substringAfter(equation, "="))))
+					|| ((StringUtils.countMatches(frmlParsed, "y") > 0) &&
+						(StringUtils.isNumeric(StringUtils.substringBefore(equation, "="))) || (StringUtils.isNumeric(StringUtils.substringAfter(equation, "="))))) {
+							graphCartesianFunction(frmlParsed, graphics2d);
+							//graphMultipleLines(frmlParsed, graphics2d);
 				}
 				// 1-parameter used in 1 function: 'y=f(x)' OR 'x=f(y)'
 				else {
@@ -899,42 +904,49 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     // Needs work: still not graphing tan(x)=N correctly
     private static void graphMultipleLines(String equation, Graphics2D grphcs2D) {
     	String frmlRplc = equation.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+ -", "-").replaceAll("\\+-", "-");//.replaceAll("\\+\\(-", "-(");
-    	int target = 0, result = 0;
+    	double target = 0, result = 0, threshold = 1;
 		Expression expression;
 
     	if (StringUtils.isNumeric(StringUtils.substringBefore(equation, "="))) {
 			if (showMessages) { System.out.println("1"); }
 			frmlRplc = StringUtils.substringAfter(equation, "=");
-			// Multiplier calibrates results to harmonize with other graphing methods
-			target = (int) (NumberUtils.toDouble(StringUtils.substringBefore(equation, "=")) * 22.5);
+			target = NumberUtils.toDouble(StringUtils.substringBefore(equation, "="));
 		}
 		else if (StringUtils.isNumeric(StringUtils.substringAfter(equation, "="))) {
 			if (showMessages) { System.out.println("2"); }
 			frmlRplc = StringUtils.substringBefore(equation, "=");
-			// Multiplier calibrates results to harmonize with other graphing methods
-			target = (int) (NumberUtils.toDouble(StringUtils.substringAfter(equation, "=")) * 22.5);
+			target = NumberUtils.toDouble(StringUtils.substringAfter(equation, "="));
 		}
 
     	if (frmlRplc.contains("x")) {
-    		for (int i=-displaySize; i<=displaySize; i++) {
+    		System.out.println("x section");
+    		for (float i=-displaySize; i<=displaySize; i+=.5) {
     			expression = new Expression(frmlRplc.replaceAll("x", String.valueOf(i)));
-    			result = (int) (expression.calculate() * 22.5);
-    			System.out.println("equation: '" + equation + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", target: '" + target + "'" + ", i: '" + i + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", result: '" + result + "'");
+    			result = (expression.calculate());
+    			System.out.println("equation: '" + equation + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", target: '" + target + "'" + ", threshold: '" + threshold + "'" + ", i: '" + i + "'" + ", result: '" + result + "'" + ", belowThreshold(Math.abs(result), Math.abs(target), Math.abs(threshold)): '" + belowThreshold(Math.abs(result), Math.abs(target), Math.abs(threshold)) + "'");
 
-    			if (result == target) {
-    				grphcs2D.drawLine((graphCenter) + (int) (i * 22.5), 0, (graphCenter) + (int) (i * 22.5), displaySize);
+    			// Need different logic here for 1. abs function, 2. trig functions & 3. exponential functions
+    			// 1.	abs: use exact match (ex abs(x)=N, abs(x)=-N)
+    			// 2.	trig (sin, cos, tan, etc): compute inverse result using target, then plot all matches
+    			//		(ex. for tan(x)=0, compute atan(0) = x, then plot all x values)
+    			// 3.	exponential (x^N): plot matches down to nearest 1/10 value
+    			//		(ex. x^2=4, plot x=2, x^=6, plot x=2.4) (ex. x^3=8, plot x=2, x^3= 19, plot x=2.7)
+       			if (belowThreshold((double)Math.abs(result), (double)Math.abs(target), Math.abs(threshold))) {
+    				System.out.println("graphCenter: '" + graphCenter + "'" + ", target: '" + target + "'" + ", i: '" + i + "'" + ", result: '" + result + "'" + ", graphCenter + (i * 22.5) : '" + (graphCenter + (i * 22.5)) + "'");
+    				grphcs2D.drawLine((int)(graphCenter + (i * 22.5)), 0, (int)(graphCenter + (i * 22.5)), displaySize);
     			}
     		}
     	}
     	else {
-    		for (int i=-displaySize; i<=displaySize; i++) {
+    		System.out.println("y section");
+    		for (float i=-displaySize; i<=displaySize; i+=.5) {
     			expression = new Expression(frmlRplc.replaceAll("y", String.valueOf(i)));
-    			result = (int) (expression.calculate() * 22.5);
+    			result = (expression.calculate());
+    			System.out.println("equation: '" + equation + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", target: '" + target + "'" + ", threshold: '" + threshold + "'" + ", i: '" + i + "'" + ", result: '" + result + "'" + ", belowThreshold(Math.abs(result), Math.abs(target), Math.abs(threshold)): '" + belowThreshold(Math.abs(result), Math.abs(target), Math.abs(threshold)) + "'");
 
-    			System.out.println("equation: '" + equation + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", target: '" + target + "'" + ", i: '" + i + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", result: '" + result + "'");
-
-    			if (result == target) {
-        			grphcs2D.drawLine(0, (graphCenter) - (int) (i * 22.5), displaySize, (graphCenter) - (int) (i * 22.5));
+       			if (belowThreshold((double)Math.abs(result), (double)Math.abs(target), Math.abs(threshold))) {
+    				System.out.println("graphCenter: '" + graphCenter + "'" + ", target: '" + target + "'" + ", i: '" + i + "'" + ", result: '" + result + "'" + ", graphCenter - (i * 22.5) : '" + (graphCenter - (i * 22.5)) + "'");
+        			grphcs2D.drawLine(0, (int)(graphCenter - (i * 22.5)), displaySize, (int)(graphCenter - (i * 22.5)));
     			}
     		}
     	}
