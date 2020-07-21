@@ -690,12 +690,12 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 		// Test here to check if 1 side of equation is numeric, to compensate for asymmetric plots that use functions
 		if ((yCoord > displaySize) && (f1sn1s) && (containsFunction(equation))) {
-			x = (displaySize - xCoord) / 100D;
+			x = (displaySize - xCoord) / 50D;	// Multiplier calibrates results to harmonize with other graphing methods
 		}
 		else {
-			x = (xCoord - displaySize) / 100D;
+			x = (xCoord - displaySize) / 50D;	// Multiplier calibrates results to harmonize with other graphing methods
 		}
-		y = (displaySize - yCoord) / 100D;
+		y = (displaySize - yCoord) / 50D;		// Multiplier calibrates results to harmonize with other graphing methods
 
 		// Need 2 versions of replacement equation so as to compensate for any functions included in equation
 		if (containsFunction(equation)) {
