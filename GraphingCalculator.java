@@ -110,7 +110,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     private static Double targetValue = 0D;
     private static Graphics grphcs;
     private static Graphics2D graphics2d;
-    private static Boolean solidLines = false, clearBetweenPlots = true, graphPlusAndMinus = false, showMessages = true;
+    private static Boolean solidLines = false, clearBetweenPlots = true, graphPlusAndMinus = false, showGridLines = true, showMessages = true;
 
     // Thread parameters
     private static graphThread grphthrd;
@@ -132,13 +132,13 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		/*gcFrame.addWindowFocusListener(new WindowFocusListener() {
 			@Override
 			public void windowLostFocus(WindowEvent e) {
-				//clearGraphPanel();
+				//paintBackground();
 				//graphFormula(formulaText.getText());
 			}
 
 			@Override
 			public void windowGainedFocus(WindowEvent we) {
-				clearGraphPanel();
+				paintBackground();
 				graphFormula(formulaText.getText());
 				if (showMessages) { System.out.println("Got here"); }
 				try { TimeUnit.MILLISECONDS.sleep(1000); } catch (InterruptedException e) { e.printStackTrace(); };
@@ -149,21 +149,21 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 	/*@Override
 	public void paint(Graphics g) {
 		//super.paint(g);
-		clearGraphPanel();
+		paintBackground();
 		graphFormula(formulaText.getText());
 	}*/
 
 	@Override
 	public void paintComponent(Graphics g) {
 		//super.paintComponent(g);
-		clearGraphPanel();
+		paintBackground();
 		graphFormula(formulaText.getText());
 	}
 
 	@Override
 	public void itemStateChanged(ItemEvent arg0) {
 		super.setIgnoreRepaint(true);
-		clearGraphPanel();
+		paintBackground();
 		graphFormula(formulaText.getText());
 	}
 
@@ -173,17 +173,32 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 		    @Override
 	    	public void paint(Graphics g) {
+		    	Graphics2D g2d = (Graphics2D)g;
+				double stepSize = screenSize / 80.25;
+
 		    	super.paint(g);
-		    	Graphics2D graphics2d = (Graphics2D)g;
-		    	/*RenderingHints rh =
-		    		new RenderingHints(
-		    			RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON
-		    			RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE
-		    		);
-		    	graphics2d.setRenderingHints(rh);*/
-		    	graphics2d.setColor(Color.BLACK);
-		    	graphics2d.drawLine(0, graphCenter, displaySize, graphCenter);	// Horizontal graph center line
-		    	graphics2d.drawLine(graphCenter, 0, graphCenter, displaySize);	// Vertical graph center line
+
+		    	// Need to determine why call to 'paintBackground' method doesn't work here
+				//paintBackground();
+				if (showGridLines) { g2d.setColor(Color.GRAY); }
+				else { g2d.setColor(Color.WHITE); }
+
+				if (showMessages) { System.out.println("showGridLines: '" + showGridLines + "'" + ", stepSize: '" + stepSize + "'"); }
+
+				for (double row = 0; row < screenSize - 2; row = row + stepSize) {
+				    g2d.drawLine(0, (int)row, screenSize, (int)row);
+				}
+
+				for (double col = 0; col < screenSize - 2; col = col + stepSize) {
+				    g2d.drawLine((int)col, 0, (int)col, screenSize);
+				}
+
+				g2d.setStroke(new BasicStroke(2));
+		    	g2d.setColor(Color.BLACK);
+		    	g2d.drawLine(0, displaySize/2, displaySize, displaySize/2);
+		    	g2d.drawLine(displaySize/2, 0, displaySize/2, displaySize);
+		    	g2d.setStroke(new BasicStroke(1));
+
 		    	//graphFormula(formulaText.getText());
 		    }
 
@@ -415,7 +430,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
         keyGraph.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if (clearBetweenPlots) { clearGraphPanel(); }
+				if (clearBetweenPlots) { paintBackground(); }
 
 				graphFormula(formulaText.getText());
 			}
@@ -427,7 +442,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
         keyClearGraph.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				clearGraphPanel();
+				paintBackground();
 			}
         });
         keypadPanelCntrl1.add(keyClearGraph);
@@ -474,6 +489,20 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			}
         });
         keypadPanelCntrl2.add(plusAndMinus);
+        formulaPanel.add(keypadPanelCntrl2);
+
+        JCheckBox showGrid = new JCheckBox("Show Grid Lines");
+        showGrid.setSelected(true);
+        showGrid.setBackground(Color.GRAY);
+        showGrid.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JCheckBox showGridClrCB = (JCheckBox) e.getSource();
+
+				showGridLines = showGridClrCB.isSelected() ? true : false;
+			}
+        });
+        keypadPanelCntrl2.add(showGrid);
         formulaPanel.add(keypadPanelCntrl2);
 
         JPanel fillerPanel = new JPanel();
@@ -690,12 +719,12 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 		// Test here to check if 1 side of equation is numeric, to compensate for asymmetric plots that use functions
 		if ((yCoord > displaySize) && (f1sn1s) && (containsFunction(equation))) {
-			x = (displaySize - xCoord) / 50D;	// Multiplier calibrates results to harmonize with other graphing methods
+			x = (displaySize - xCoord) / 100D;	// Multiplier calibrates results to harmonize with other graphing methods
 		}
 		else {
-			x = (xCoord - displaySize) / 50D;	// Multiplier calibrates results to harmonize with other graphing methods
+			x = (xCoord - displaySize) / 100D;	// Multiplier calibrates results to harmonize with other graphing methods
 		}
-		y = (displaySize - yCoord) / 50D;		// Multiplier calibrates results to harmonize with other graphing methods
+		y = (displaySize - yCoord) / 100D;		// Multiplier calibrates results to harmonize with other graphing methods
 
 		// Need 2 versions of replacement equation so as to compensate for any functions included in equation
 		if (containsFunction(equation)) {
@@ -901,57 +930,6 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     	}
     }
 
-    // Needs work: still not graphing tan(x)=N correctly
-    private static void graphMultipleLines(String equation, Graphics2D grphcs2D) {
-    	String frmlRplc = equation.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+ -", "-").replaceAll("\\+-", "-");//.replaceAll("\\+\\(-", "-(");
-    	double target = 0, result = 0, threshold = 1;
-		Expression expression;
-
-    	if (StringUtils.isNumeric(StringUtils.substringBefore(equation, "="))) {
-			if (showMessages) { System.out.println("1"); }
-			frmlRplc = StringUtils.substringAfter(equation, "=");
-			target = NumberUtils.toDouble(StringUtils.substringBefore(equation, "="));
-		}
-		else if (StringUtils.isNumeric(StringUtils.substringAfter(equation, "="))) {
-			if (showMessages) { System.out.println("2"); }
-			frmlRplc = StringUtils.substringBefore(equation, "=");
-			target = NumberUtils.toDouble(StringUtils.substringAfter(equation, "="));
-		}
-
-    	if (frmlRplc.contains("x")) {
-    		System.out.println("x section");
-    		for (float i=-displaySize; i<=displaySize; i+=.5) {
-    			expression = new Expression(frmlRplc.replaceAll("x", String.valueOf(i)));
-    			result = (expression.calculate());
-    			System.out.println("equation: '" + equation + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", target: '" + target + "'" + ", threshold: '" + threshold + "'" + ", i: '" + i + "'" + ", result: '" + result + "'" + ", belowThreshold(Math.abs(result), Math.abs(target), Math.abs(threshold)): '" + belowThreshold(Math.abs(result), Math.abs(target), Math.abs(threshold)) + "'");
-
-    			// Need different logic here for 1. abs function, 2. trig functions & 3. exponential functions
-    			// 1.	abs: use exact match (ex abs(x)=N, abs(x)=-N)
-    			// 2.	trig (sin, cos, tan, etc): compute inverse result using target, then plot all matches
-    			//		(ex. for tan(x)=0, compute atan(0) = x, then plot all x values)
-    			// 3.	exponential (x^N): plot matches down to nearest 1/10 value
-    			//		(ex. x^2=4, plot x=2, x^=6, plot x=2.4) (ex. x^3=8, plot x=2, x^3= 19, plot x=2.7)
-       			if (belowThreshold((double)Math.abs(result), (double)Math.abs(target), Math.abs(threshold))) {
-    				System.out.println("graphCenter: '" + graphCenter + "'" + ", target: '" + target + "'" + ", i: '" + i + "'" + ", result: '" + result + "'" + ", graphCenter + (i * 22.5) : '" + (graphCenter + (i * 22.5)) + "'");
-    				grphcs2D.drawLine((int)(graphCenter + (i * 22.5)), 0, (int)(graphCenter + (i * 22.5)), displaySize);
-    			}
-    		}
-    	}
-    	else {
-    		System.out.println("y section");
-    		for (float i=-displaySize; i<=displaySize; i+=.5) {
-    			expression = new Expression(frmlRplc.replaceAll("y", String.valueOf(i)));
-    			result = (expression.calculate());
-    			System.out.println("equation: '" + equation + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", target: '" + target + "'" + ", threshold: '" + threshold + "'" + ", i: '" + i + "'" + ", result: '" + result + "'" + ", belowThreshold(Math.abs(result), Math.abs(target), Math.abs(threshold)): '" + belowThreshold(Math.abs(result), Math.abs(target), Math.abs(threshold)) + "'");
-
-       			if (belowThreshold((double)Math.abs(result), (double)Math.abs(target), Math.abs(threshold))) {
-    				System.out.println("graphCenter: '" + graphCenter + "'" + ", target: '" + target + "'" + ", i: '" + i + "'" + ", result: '" + result + "'" + ", graphCenter - (i * 22.5) : '" + (graphCenter - (i * 22.5)) + "'");
-        			grphcs2D.drawLine(0, (int)(graphCenter - (i * 22.5)), displaySize, (int)(graphCenter - (i * 22.5)));
-    			}
-    		}
-    	}
-    }
-
     private static void graph1ParameterEquation(String equation, Graphics2D grphcs2D, boolean f1sn1s) {
 		String frmlRplc = "";
 		double resultX = 0, resultY = 0, prvsX = 0, prvsY = 0;
@@ -966,7 +944,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 		//for (float i=-graphCenter*10; i<=graphCenter*10; i++) {
 		for (float i=-displaySize; i<=displaySize; i++) {
-			float fi = i / 100;
+			float fi = i / 50;
 
 			// Vertical equation: f(y)
 			if (equation.contains("y")) {
@@ -1400,14 +1378,29 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     	jpnl.add(jbtn);
     }
 
-    private static void clearGraphPanel() {
+    private static void paintBackground() {
 		Graphics g = graphPanel.getGraphics();
-		g.setColor(Color.WHITE);
+    	Graphics2D g2d = (Graphics2D)g;
+		double stepSize = screenSize / 80.25;
 
-		g.fillRect(0, 0, displaySize, displaySize);
-    	g.setColor(Color.BLACK);
-    	g.drawLine(0, displaySize/2, displaySize, displaySize/2);
-    	g.drawLine(displaySize/2, 0, displaySize/2, displaySize);
+		if (showGridLines) { g2d.setColor(Color.GRAY); }
+		else { g2d.setColor(Color.WHITE); }
+
+		if (showMessages) { System.out.println("showGridLines: '" + showGridLines + "'" + ", stepSize: '" + stepSize + "'"); }
+
+		for (double row = 0; row < screenSize - 2; row = row + stepSize) {
+		    g2d.drawLine(0, (int)row, screenSize, (int)row);
+		}
+
+		for (double col = 0; col < screenSize - 2; col = col + stepSize) {
+		    g2d.drawLine((int)col, 0, (int)col, screenSize);
+		}
+
+		g2d.setStroke(new BasicStroke(2));
+    	g2d.setColor(Color.BLACK);
+    	g2d.drawLine(0, displaySize/2, displaySize, displaySize/2);
+    	g2d.drawLine(displaySize/2, 0, displaySize/2, displaySize);
+    	g2d.setStroke(new BasicStroke(1));
     }
 
     public static void main(String[] args) {
