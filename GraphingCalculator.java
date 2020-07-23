@@ -180,6 +180,10 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 		    	// Need to determine why call to 'paintBackground' method doesn't work here
 				//paintBackground();
+
+				g2d.setColor(Color.WHITE);
+				g2d.fillRect(0, 0, displaySize, displaySize);
+
 				if (showGridLines) { g2d.setColor(Color.GRAY); }
 				else { g2d.setColor(Color.WHITE); }
 
@@ -500,6 +504,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				JCheckBox showGridClrCB = (JCheckBox) e.getSource();
 
 				showGridLines = showGridClrCB.isSelected() ? true : false;
+				paintBackground();
+				graphFormula(formulaText.getText());
 			}
         });
         keypadPanelCntrl2.add(showGrid);
@@ -1382,6 +1388,9 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		Graphics g = graphPanel.getGraphics();
     	Graphics2D g2d = (Graphics2D)g;
 		double stepSize = screenSize / 80.25;
+
+		g2d.setColor(Color.WHITE);
+		g2d.fillRect(0, 0, displaySize, displaySize);
 
 		if (showGridLines) { g2d.setColor(Color.GRAY); }
 		else { g2d.setColor(Color.WHITE); }
