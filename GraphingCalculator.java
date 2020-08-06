@@ -300,8 +300,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
         keypadPanelArith2.setBackground(Color.GRAY);
         JButton keyPeriod = new JButton();
         setupButton(keyPeriod, keypadPanelArith2, ".", ".", 65, 25);
-        JButton keySemicolon = new JButton();
-        setupButton(keySemicolon, keypadPanelArith2, ";", ";", 65, 25);
+        JButton keyComma = new JButton();
+        setupButton(keyComma, keypadPanelArith2, ",", ",", 65, 25);
         JButton keyLP = new JButton();
         setupButton(keyLP, keypadPanelArith2, "(", "(", 65, 25);
         JButton keyRP = new JButton();
@@ -354,6 +354,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
         JPanel keypadPanelFnctn3 = new JPanel();
         keypadPanelFnctn3.setBackground(Color.GRAY);
+        JButton keySemicolon = new JButton();
+        setupButton(keySemicolon, keypadPanelFnctn3, ";", ";", 65, 25);
         JButton keyFctrl = new JButton();
         setupButton(keyFctrl, keypadPanelFnctn3, "!", "!", 65, 25);
         JButton keyGamma = new JButton();
@@ -552,15 +554,13 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					graphStraightLine(frmlParsed, graphics2d);
 					if (graphPlusAndMinus) { graphStraightLine("-" + frmlParsed, graphics2d); }
 				}
-				// Multiple straight lines created by functions (abs, tan, x^N, y^N, etc.)
-				// Idea: add logic here to invoke 'graphCartesianFunction' method when equation has 1 parameter AND numeric target
+				// Invoke 'graphCartesianFunction' method when equation has 1 parameter AND numeric target
 				// (ex. x=N or y=N, f(x)=N, f(y)=N)
 				else if (((StringUtils.countMatches(frmlParsed, "x") > 0) &&
 						(StringUtils.isNumeric(StringUtils.substringBefore(equation, "="))) || (StringUtils.isNumeric(StringUtils.substringAfter(equation, "="))))
 					|| ((StringUtils.countMatches(frmlParsed, "y") > 0) &&
 						(StringUtils.isNumeric(StringUtils.substringBefore(equation, "="))) || (StringUtils.isNumeric(StringUtils.substringAfter(equation, "="))))) {
 							graphCartesianFunction(frmlParsed, graphics2d);
-							//graphMultipleLines(frmlParsed, graphics2d);
 				}
 				// 1-parameter used in 1 function: 'y=f(x)' OR 'x=f(y)'
 				else {
@@ -794,6 +794,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     	// and holds 1 of 16 values, computed based on result value of each surrounding screen grid element. (ex. if only bottom right's
     	// value >= 0 then isogrid value = 2, if only bottom right's value < 0 then isogrid value = 13)
     	Integer[][] msGrid = new Integer[graphCenter-1][graphCenter-1];
+		QuadCurve2D shape = new QuadCurve2D.Double();
+		Double midX = 0D, midY = 0D;
 
     	// Initialize isogrid
 		for (int row = 0; row < msGrid.length; row++) {
@@ -801,25 +803,6 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		    	msGrid[row][col] = 0;
 		    }
 		}
-
-		// Simple nested loop to test if values are being transferred and used properly.
-    	// See if can use quadtree-style approach here also (maybe not?)
-    	/*for (int i = 0; i < graphCenter; i++) {
-    		for (int j = 0; j < graphCenter; j++) {
-    			//nextQTC = qtG[j][i];
-    			nextQTC = qtG.getGridElement(j, i);
-        		// This proves that the grid is available & readable: it simply plots the same image as created previously
-    			if ((null != nextQTC) && (0 >= nextQTC.getResult())) {
-    				grphcs2D.fillRect((int) (nextQTC.getX()), (int) (nextQTC.getY()), 2, 2);
-
-    				nextLine.append('X');
-    			}
-    			else { nextLine.append(' '); }
-    		}
-
-			if (showMessages) { System.out.println(nextLine); }
-			nextLine.setLength(0);
-    	}*/
 
 		// NOTE: need to increase size of squares being tested,because if test each individual dot then algorithm draws lines inside figures
 		// Use lowest level of points alone: produces more regular grid arrangement; using all points produces quincunx of 5 dots.
@@ -835,22 +818,13 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					if ((0 > qtG.getGridElement(iRow, iCol+1).getResult()))		{ msGrid[iRow][iCol] += 4; }	// Upper right screen grid element
 					if ((0 > qtG.getGridElement(iRow+1, iCol+1).getResult()))	{ msGrid[iRow][iCol] += 2; }	// Lower right screen grid element
 					if ((0 > qtG.getGridElement(iRow+1, iCol).getResult()))		{ msGrid[iRow][iCol] += 1; }	// Lower left screen grid element
-					/*if ((0 > qtG.getGridElement(iRow, iCol).getResult()))		{ msGrid[iRow][iCol] += 8; }	// Upper left screen grid element
-					if ((0 > qtG.getGridElement(iRow+1, iCol).getResult()))		{ msGrid[iRow][iCol] += 4; }	// Upper right screen grid element
-					if ((0 > qtG.getGridElement(iRow+1, iCol+1).getResult()))	{ msGrid[iRow][iCol] += 2; }	// Lower right screen grid element
-					if ((0 > qtG.getGridElement(iRow, iCol+1).getResult()))		{ msGrid[iRow][iCol] += 1; }	// Lower left screen grid element
-					*/
     			}
     			catch (NullPointerException npe) {
     				continue;	// Should be able to ignore nulls
     			}
-
-    			//nextLine.append(String.format("%02d", msGrid[iRow][iCol]));
-				//nextLine.append(' ');
 	    	}
 
 			if (showMessages) { System.out.println(nextLine); }
-			//nextLine.setLength(0);
 		}
 
 		// Step 2: Match each isogrid element's value with appropriate case value, then draw the correct lines.
@@ -882,11 +856,15 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 									break;	// (Works)
 						case 7 :	// Upper left square empty, so draw from upper right left edge center to lower left top edge center
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
-									CubicCurve2D qc2D = new CubicCurve2D.Double(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(),
-																			qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(),
-																			qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY(),
-																			qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
-						//			grphcs2D.draw(qc2D);
+									/*midX = (double) (qtG.getGridElement(iCol-1, iRow+1).getX() + (Math.abs(qtG.getGridElement(iCol-1, iRow+1).getX() - qtG.getGridElement(iCol+1, iRow-1).getX())/2));
+									midY = (double) (qtG.getGridElement(iCol-1, iRow+1).getY() - (Math.abs(qtG.getGridElement(iCol-1, iRow+1).getY() - qtG.getGridElement(iCol+1, iRow-1).getY())/2));
+									System.out.println("Start: " + qtG.getGridElement(iCol-1, iRow+1).getX() + "," + qtG.getGridElement(iCol-1, iRow+1).getY()
+													+ ", Mid: " + midX + "," + midY
+													+ ", End: " + qtG.getGridElement(iCol+1, iRow-1).getX() + "," + qtG.getGridElement(iCol+1, iRow-1).getY());
+									shape.setCurve(qtG.getGridElement(iCol-1, iRow+1).getX(), qtG.getGridElement(iCol-1, iRow+1).getY(),
+													midX, midY,
+													qtG.getGridElement(iCol+1, iRow-1).getX(), qtG.getGridElement(iCol+1, iRow-1).getY());
+									grphcs2D.draw (shape);*/
 									break;	// (Works)
 						case 8 :	// Upper left square filled, so draw from upper left bottom edge center to upper left right edge center
 									//grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol+1, iRow).getX(), qtG.getGridElement(iCol+1, iRow).getY());
@@ -901,6 +879,15 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 									break;
 						case 11 :	// Upper right square empty, so draw from upper left right edge center to lower right top edge center
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY(), qtG.getGridElement(iCol+1, iRow+1).getX(), qtG.getGridElement(iCol+1, iRow+1).getY());
+									/*midX = (double) (qtG.getGridElement(iCol+1, iRow-1).getX() + (Math.abs(qtG.getGridElement(iCol+1, iRow-1).getX() - qtG.getGridElement(iCol-1, iRow+1).getX())/2));
+									midY = (double) (qtG.getGridElement(iCol+1, iRow-1).getY() - (Math.abs(qtG.getGridElement(iCol+1, iRow-1).getY() - qtG.getGridElement(iCol-1, iRow+1).getY())/2));
+									System.out.println("Start: " + qtG.getGridElement(iCol+1, iRow-1).getX() + "," + qtG.getGridElement(iCol+1, iRow-1).getY()
+													+ ", Mid: " + midX + "," + midY
+													+ ", End: " + qtG.getGridElement(iCol-1, iRow+1).getX() + "," + qtG.getGridElement(iCol-1, iRow+1).getY());
+									shape.setCurve(qtG.getGridElement(iCol+1, iRow-1).getX(), qtG.getGridElement(iCol+1, iRow-1).getY(),
+													midX, midY,
+													qtG.getGridElement(iCol-1, iRow+1).getX(), qtG.getGridElement(iCol-1, iRow+1).getY());
+									grphcs2D.draw (shape);*/
 									break;	// (Works)
 						case 12 :	// Both left squares filled, so draw from upper left right edge center to lower left right edge center
 									grphcs2D.drawLine(qtG.getGridElement(iCol, iRow+1).getX(), qtG.getGridElement(iCol, iRow+1).getY(), qtG.getGridElement(iCol, iRow).getX(), qtG.getGridElement(iCol, iRow).getY());
@@ -1375,12 +1362,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     private static void setupButton(JButton jbtn, JPanel jpnl, String btnTxt, String frmlTxt, int width, int height) {
     	jbtn.setText(btnTxt);
     	jbtn.setPreferredSize(new Dimension(width, height));
-    	jbtn.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				formulaText.insert(frmlTxt, formulaText.getCaretPosition());
-			}
-        });
+    	// Use lambda function to shorten code, instead of anonymous method
+    	jbtn.addActionListener(e -> formulaText.insert(frmlTxt, formulaText.getCaretPosition())); 
     	jpnl.add(jbtn);
     }
 
