@@ -1268,11 +1268,16 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 	// Makes equation evaluation more robust, because user can input "(x^2.3 + y^-4)" instead of "((x^2.3) + (y^-4))",
 	// and program can parse it correctly. Include further values in regex if add any parameter buttons to keyboard.
 	public static String parseExponents(String equation) {
+		StringBuffer replacement = new StringBuffer();
+		String xpnnts = new String(), lower = new String();
+
+		// Ensure that parameters without exponents are handled correctly
+		xpnnts = equation.replaceAll("X", "X^1").replaceAll("Y", "Y^1").replaceAll("x", "x^1").replaceAll("y", "y^1");
+		equation = xpnnts;
+
 		String regex = "(([xyzreXYZRE]\\^)([-+]?([0-9]*\\.[0-9]+|[0-9]+)))";
 		Pattern pattern = Pattern.compile(regex);
 		Matcher matcher = pattern.matcher(equation);
-		StringBuffer replacement = new StringBuffer();
-		String lower = new String();
 
 		while(matcher.find()) {
 			matcher.appendReplacement(replacement, "(" + matcher.group() + ")");
@@ -1293,7 +1298,15 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 	public static String replaceSigns(String equation) {
 		String replaceSigns = new String();
 
-		replaceSigns = equation.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+ -", "-").replaceAll("\\+-", "-");
+		if (containsFunction(equation)) {
+			replaceSigns = equation.replaceAll("--", "-").replaceAll("- -", "\\+").replaceAll("\\+-", "\\+").replace("\\+ -", "-");
+		}
+		else {
+			// Needs work: "-" renders correctly asymmetric plots with functions (parallel diagonal lines, etc), but doesn't render correctly symmetric function plots
+			replaceSigns = equation.replaceAll("--", "-").replaceAll("- -", "\\+").replaceAll("\\+-", "-").replace("\\+ -", "-");
+		}
+
+		//replaceSigns = equation.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+ -", "-").replaceAll("\\+-", "-");
 
 		return replaceSigns;
 	}
