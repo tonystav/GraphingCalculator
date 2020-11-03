@@ -110,7 +110,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     private static Double targetValue = 0D;
     private static Graphics grphcs;
     private static Graphics2D graphics2d;
-    private static Boolean solidLines = false, clearBetweenPlots = true, graphPlusAndMinus = false, showGridLines = true, showMessages = true;
+    private static Boolean solidLines = false, clearBetweenPlots = true, graphPlusAndMinus = false, showGridLines = true, showMessages = false;
 
     // Thread parameters
     private static graphThread grphthrd;
@@ -529,6 +529,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// Perform basic syntax checks. Use regular expressions to parse exponents properly
 		if (noInputErrors(equation)) {
 			String frmlParsed = parseExponents(equation);
+			if (showMessages) { System.out.println("frmlParsed: ~" + frmlParsed + "~"); }
 
 			// Determine what type of equation was entered
 			// Category: Polar coordinates: 'r=f(θ)'
@@ -562,6 +563,13 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 						(StringUtils.isNumeric(StringUtils.substringBefore(equation, "="))) || (StringUtils.isNumeric(StringUtils.substringAfter(equation, "="))))) {
 							graphCartesianFunction(frmlParsed, graphics2d);
 				}
+				// Need to handle also any equations that have 1 parameter, x or y, but formulas on both sides
+				// ex 'log10(x^e) = e*(log10(x))'
+				else if (((StringUtils.countMatches(StringUtils.substringBefore(equation, "="), "x") > 0)
+					&&  (StringUtils.countMatches(StringUtils.substringAfter(equation, "="), "x") > 0))
+					|| ((StringUtils.countMatches(StringUtils.substringBefore(equation, "="), "y") > 0)
+							&&  (StringUtils.countMatches(StringUtils.substringAfter(equation, "="), "y") > 0)))
+					graphCartesianFunction(frmlParsed, graphics2d);
 				// 1-parameter used in 1 function: 'y=f(x)' OR 'x=f(y)'
 				else {
 					grphthrd = new graphThread(graphics2d, "single", frmlParsed, null, 0, 0, 0, null, false);
@@ -577,7 +585,10 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     }
 
     private static void graphCartesianFunction(String equation, Graphics2D grphcs2D) {
-		String leftEquation = "", rightEquation = "", xEquation = "", yEquation = "", frmNoEquals = "";
+		// Need to handle also any equations that have 1 parameter, x or y, but formulas on both sides
+		// ex 'log10(x^e) = e*(log10(x))'
+
+    	String leftEquation = "", rightEquation = "", xEquation = "", yEquation = "", frmNoEquals = "";
 		Integer gridSize = graphCenter+1; // Accommodates quadtree total but maps plot storage to graph size
 		QTGrid qtG = new QTGrid(gridSize);
 		boolean fnctn1SideNmrc1Side = true;
@@ -594,45 +605,19 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 
 		// String processing on equation occurs outside of Cartesian processing because quadtree algorithm is recursive
 		if (StringUtils.isNumeric(StringUtils.substringBefore(equation, "="))) {
-			if (showMessages) { System.out.println("1"); }
+			if (showMessages) { System.out.println("Version 1"); }
 			frmNoEquals = "(" + StringUtils.substringAfter(equation, "=") + ") - (" + StringUtils.substringBefore(equation, "=") + ")";
 		}
 		else if (StringUtils.isNumeric(StringUtils.substringAfter(equation, "="))) {
-			if (showMessages) { System.out.println("2"); }
+			if (showMessages) { System.out.println("Version 2"); }
 			frmNoEquals = "(" + StringUtils.substringBefore(equation, "=") + ") - (" + StringUtils.substringAfter(equation, "=") + ")";
 		}
 		else {
-			if (showMessages) { System.out.println("3"); }
+			if (showMessages) { System.out.println("Version 3"); }
 			fnctn1SideNmrc1Side = false;
 			//frmNoEquals = "(" + StringUtils.substringBefore(function, "=") + ") - (" + StringUtils.substringAfter(function, "=") + ")";
 
-			equation = equation.replaceAll(" ", "");
-			// Store each equation separately
-			leftEquation = StringUtils.substringBefore(equation, "=");
-			rightEquation = StringUtils.substringAfter(equation, "=");
-
-			// Determine signs left & right equations, then rearrange into single equation. Replace
-			// double negative (subtraction of negative) with addition of positive (mathematically equivalent)
-
-			// Negatives on both sides, so replace both & move right side to left
-			if ((isExpressionNegative(leftEquation)) && (isExpressionNegative(rightEquation))) {
-				frmNoEquals = ("(" + reverseExpressionSign(StringUtils.substringBefore(equation, "=")) + ") - ("
-						+ reverseExpressionSign(StringUtils.substringAfter(equation, "=")) + ")");
-			}
-			// Left side negative, so reverse sign & append to right side
-			else if (isExpressionNegative(leftEquation)) {
-				frmNoEquals = ("(" + StringUtils.substringAfter(equation, "=") + ") + ("
-							+ reverseExpressionSign(StringUtils.substringBefore(equation, "=")) + ")");
-			}
-			// Right side negative, so reverse sign & append to left side
-			else if (isExpressionNegative(rightEquation)) {
-				frmNoEquals = ("(" + StringUtils.substringBefore(equation, "=") + ") + ("
-							+ reverseExpressionSign(StringUtils.substringAfter(equation, "=")) + ")");
-			}
-			// Neither side negative, so append right side, as negative, to left side
-			else {
-				frmNoEquals = "(" + StringUtils.substringBefore(equation, "=") + ") - (" + StringUtils.substringAfter(equation, "=") + ")";
-			}
+			frmNoEquals = rearrangeFormula(equation);
 		}
 		if (showMessages) { System.out.println("frmNoEquals: " + frmNoEquals); }
 
@@ -642,7 +627,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// 2. Use marching squares algorithm to create graph from array list
 		marchingSquares(graphics2d, qtG);*/
 
-		// Multithreading: Spawn 1 thread for each level 3 section (64 total): speeds up processing by 8x. Total plot time: ~ 6 seconds.
+		// Multithreading: Spawn 1 thread for each level 3 section (64 total): speeds up processing by 8x.
+		// Total plot time: ~ 6 seconds, (~8 seconds with console messages active).
 		int loopStart = screenSize/16, loopEnd = screenSize-loopStart, loopIncrement = loopStart*2;
 		for (int xCrdnt = loopStart; xCrdnt <= loopEnd; xCrdnt+=loopIncrement) {
 			for (int yCrdnt = loopStart; yCrdnt <= loopEnd; yCrdnt+=loopIncrement) {
@@ -935,6 +921,10 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// sgn(cos(x)) or sgn(sin(x)) // Square wave
 		// sgn(Gamma(x)) // Square wave when x < 0, 1/-1 when x > 0
 
+		// Need to put equation rearrangement in here, like in 'graphCartesianFunction',
+		// to handle also any equations that have 1 parameter, x or y, but formulas on both sides
+		// ex 'log10(x^e) = e*(log10(x))' or 'x^5 = x^4'
+
 		//for (float i=-graphCenter*10; i<=graphCenter*10; i++) {
 		for (float i=-displaySize; i<=displaySize; i++) {
 			float fi = i / 50;
@@ -953,6 +943,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					frmlRplc = "(" + equation.replaceAll("y", String.valueOf(fi)) + ") * 50";
 				}
 
+				//frmlRplc = rearrangeFormula(frmlRplc);
 				frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+-", "-").replaceAll("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
 				expression = new Expression(frmlRplc);
 
@@ -976,6 +967,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					frmlRplc = "(" + equation.replaceAll("x", String.valueOf(fi)) + ") * 50";
 				}
 
+				//frmlRplc = rearrangeFormula(frmlRplc);
 				frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+-", "-").replaceAll("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
 				expression = new Expression(frmlRplc);
 
@@ -1033,6 +1025,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// r=2*(1+e*cos(pi*theta)) // Cyclic harmonic (2-layered flower)
 		// r=(4*cot(theta/2))^.5 // Serpentine curve
 		// r=4*cos(2*cos(theta)) // Intersecting unequal lemniscates
+		// r = 4*cos(10*cos(theta)) // Spirograph Bowtie
 		// Upper/lower half only
 		// r=(3*sin(theta)) / (1+cos(theta)*cos(2*theta)) // Pretzel
 		// Left/right half only
@@ -1372,11 +1365,44 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     	return hasOperation;
     }
 
+    private static String rearrangeFormula(String equationIn) {
+    	String equationOut = "";
+
+    	equationIn = equationIn.replaceAll(" ", "");
+		// Store each equation separately
+    	String leftEquation = StringUtils.substringBefore(equationIn, "=");
+    	String rightEquation = StringUtils.substringAfter(equationIn, "=");
+
+		// Determine signs left & right equations, then rearrange into single equation. Replace
+		// double negative (subtraction of negative) with addition of positive (mathematically equivalent)
+
+		// Negatives on both sides, so replace both & move right side to left
+		if ((isExpressionNegative(leftEquation)) && (isExpressionNegative(rightEquation))) {
+			equationOut = ("(" + reverseExpressionSign(StringUtils.substringBefore(equationIn, "=")) + ") - ("
+					+ reverseExpressionSign(StringUtils.substringAfter(equationIn, "=")) + ")");
+		}
+		// Left side negative, so reverse sign & append to right side
+		else if (isExpressionNegative(leftEquation)) {
+			equationOut = ("(" + StringUtils.substringAfter(equationIn, "=") + ") + ("
+						+ reverseExpressionSign(StringUtils.substringBefore(equationIn, "=")) + ")");
+		}
+		// Right side negative, so reverse sign & append to left side
+		else if (isExpressionNegative(rightEquation)) {
+			equationOut = ("(" + StringUtils.substringBefore(equationIn, "=") + ") + ("
+						+ reverseExpressionSign(StringUtils.substringAfter(equationIn, "=")) + ")");
+		}
+		// Neither side negative, so append right side, as negative, to left side
+		else {
+			equationOut = "(" + StringUtils.substringBefore(equationIn, "=") + ") - (" + StringUtils.substringAfter(equationIn, "=") + ")";
+		}
+
+    	return equationOut;
+    }
     private static void setupButton(JButton jbtn, JPanel jpnl, String btnTxt, String frmlTxt, int width, int height) {
     	jbtn.setText(btnTxt);
     	jbtn.setPreferredSize(new Dimension(width, height));
     	// Use lambda function to shorten code, instead of anonymous method
-    	jbtn.addActionListener(e -> formulaText.insert(frmlTxt, formulaText.getCaretPosition())); 
+    	jbtn.addActionListener(e -> formulaText.insert(frmlTxt, formulaText.getCaretPosition()));
     	jpnl.add(jbtn);
     }
 
