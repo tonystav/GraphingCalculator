@@ -568,8 +568,9 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				else if (((StringUtils.countMatches(StringUtils.substringBefore(equation, "="), "x") > 0)
 					&&  (StringUtils.countMatches(StringUtils.substringAfter(equation, "="), "x") > 0))
 					|| ((StringUtils.countMatches(StringUtils.substringBefore(equation, "="), "y") > 0)
-							&&  (StringUtils.countMatches(StringUtils.substringAfter(equation, "="), "y") > 0)))
-					graphCartesianFunction(frmlParsed, graphics2d);
+					&&  (StringUtils.countMatches(StringUtils.substringAfter(equation, "="), "y") > 0))) {
+						graphCartesianFunction(frmlParsed, graphics2d);
+					}
 				// 1-parameter used in 1 function: 'y=f(x)' OR 'x=f(y)'
 				else {
 					grphthrd = new graphThread(graphics2d, "single", frmlParsed, null, 0, 0, 0, null, false);
