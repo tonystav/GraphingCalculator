@@ -72,6 +72,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				startTime = System.currentTimeMillis();
 			}
 			//System.out.println("run:: Active threads: " + Thread.activeCount());
+			if (showMessages) { System.out.println("graphType: " + graphType); }
 			switch (graphType) {
 				case "polar":
 					plotPolarGraph(equation1, g2d);
@@ -80,7 +81,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					plotParametricGraph(equation1, equation2, g2d);
 					break;
 				case "single":
-					graph1ParameterEquation(equation1, g2d, fnctn1Nmrc1);
+					graphExplicitEquation(equation1, g2d, fnctn1Nmrc1);
 					break;
 				default:
 					quadtreeStylePlot(equation1, g2d, lvl, xCrdnt, yCrdnt, qtG, fnctn1Nmrc1);
@@ -513,9 +514,19 @@ public class GraphingCalculator extends JPanel implements ItemListener {
         keypadPanelCntrl2.add(showGrid);
         formulaPanel.add(keypadPanelCntrl2);
 
-        JPanel fillerPanel = new JPanel();
+        /*JPanel fillerPanel = new JPanel();
         fillerPanel.setBackground(Color.GRAY);
-        formulaPanel.add(fillerPanel, BorderLayout.SOUTH);
+        formulaPanel.add(fillerPanel, BorderLayout.SOUTH);*/
+
+        JPanel instructionsPanel = new JPanel();
+        instructionsPanel.setBackground(Color.GRAY);
+        instructionsPanel.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
+        JLabel instructionsTitle = new JLabel("Tips:", JLabel.LEFT);
+        instructionsPanel.add(instructionsTitle, BorderLayout.WEST);
+        JLabel instructions1 = new JLabel("Parametrics: use 'z' in x and y functions and ';' to separate functions", JLabel.CENTER);
+        instructionsPanel.add(instructions1, BorderLayout.CENTER);
+        
+        formulaPanel.add(instructionsPanel, BorderLayout.SOUTH);
 
         return formulaPanel;
     }
@@ -571,7 +582,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 					&&  (StringUtils.countMatches(StringUtils.substringAfter(equation, "="), "y") > 0))) {
 						graphCartesianFunction(frmlParsed, graphics2d);
 					}
-				// 1-parameter used in 1 function: 'y=f(x)' OR 'x=f(y)'
+				// Explicit equation:: 1-parameter used in 1 function: 'y=f(x)' OR 'x=f(y)'
 				else {
 					grphthrd = new graphThread(graphics2d, "single", frmlParsed, null, 0, 0, 0, null, false);
 					grphthrd.start();
@@ -637,6 +648,14 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				grphthrd.start();
 			}
 		}
+		// Multithreading: Spawn 1 thread for each level 4 section (256 total): speeds up processing by 9x.
+		/*int loopStart = screenSize/32, loopEnd = screenSize-loopStart, loopIncrement = loopStart*2;
+		for (int xCrdnt = loopStart; xCrdnt <= loopEnd; xCrdnt+=loopIncrement) {
+			for (int yCrdnt = loopStart; yCrdnt <= loopEnd; yCrdnt+=loopIncrement) {
+				grphthrd = new graphThread(graphics2d, "cartesian", frmNoEquals, null, 4, xCrdnt, yCrdnt, qtG, fnctn1SideNmrc1Side);
+				grphthrd.start();
+			}
+		}*/
 
 		//long endTime = System.currentTimeMillis();
 		//if (showMessages) { System.out.println("graphCartesianFunction & marchingSquares took " + (endTime - startTime) + " milliseconds"); }
@@ -677,6 +696,10 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// x*y*((x^2)-(y^2)) = (x^2)+(y^2) // Maltese cross curve
 		// (y^2)-(x*((x^4)-1)) = 0 // Burnside curve
 		// (((x^2)-1)^2) = ((y^2)*(y-1)*(y-2)*(y+5)) // Stirrup curve
+		// y=(x^2+y^2-16) * tan((x^2+y^2-16)*(x)) // "Psychedelic Onion"
+		// sin(cos(tan(x))) * sin(cos(tan(y))) = 0 // "Plaid"
+		// sin(x + 2*sin(y) ) = cos( y + 3*cos(x)) // "Axe Head Tiling 1"
+		// sin(x + 3*sin(y) ) = cos( y + 2*cos(x)) // "Axe Head Tiling 2"
 		// Left/right half only
 		// (x^4)+(y^4) = (3*x*(y^2)) // Bifoliate
 		// ((x^2)+(y^2))*(((x^2)+(y^2)+2*x)^2)-(9*((x^2)-(y^2))^2) = 0 // Scarabaeus curve
@@ -910,7 +933,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     	}
     }
 
-    private static void graph1ParameterEquation(String equation, Graphics2D grphcs2D, boolean f1sn1s) {
+    private static void graphExplicitEquation(String equation, Graphics2D grphcs2D, boolean f1sn1s) {
 		String frmlRplc = "";
 		double resultX = 0, resultY = 0, prvsX = 0, prvsY = 0;
 		Expression expression;
@@ -921,19 +944,19 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 		// sgn(tan(x)-cot(x)) // 2 parallel dashed lines
 		// sgn(cos(x)) or sgn(sin(x)) // Square wave
 		// sgn(Gamma(x)) // Square wave when x < 0, 1/-1 when x > 0
+		// abs(cos(x^2)/2 * (x^2-pi/2)/pi) // Series of humps decreasing to 0 at origin
 
 		// Need to put equation rearrangement in here, like in 'graphCartesianFunction',
 		// to handle also any equations that have 1 parameter, x or y, but formulas on both sides
 		// ex 'log10(x^e) = e*(log10(x))' or 'x^5 = x^4'
 
-		//for (float i=-graphCenter*10; i<=graphCenter*10; i++) {
 		for (float i=-displaySize; i<=displaySize; i++) {
 			float fi = i / 50;
 
 			// Vertical equation: f(y)
 			if (equation.contains("y")) {
 				// Multiplier calibrates results to harmonize with other graphing methods
-				resultY = (int) (graphCenter + (fi*50));
+				resultY = (int) (graphCenter - (fi*50));
 
 				if (equation.replaceAll(" ", "").contains("^-")) {
 					// Need multiplier appended to 'frmlRplc, scaled to circle radius, to calibrate size with polar & parametric versions of circle
@@ -948,7 +971,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+-", "-").replaceAll("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
 				expression = new Expression(frmlRplc);
 
-				try {	// Needed because specific functions can cause stack overflow in math engine
+				try {	// 'try catch' needed because specific functions can cause stack overflow in math engine
 					resultX = (int) ((graphCenter) + expression.calculate());
 					if (showMessages) { System.out.println("equation: '" + equation + "'" + ", fi: '" + fi + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", resultX: '" + resultX + "'"); }
 				}
@@ -972,7 +995,7 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 				frmlRplc = frmlRplc.replaceAll("--", "").replaceAll("- -", "\\+").replaceAll("\\+-", "-").replaceAll("\\+ -", "-");//.replaceAll("\\+\\(-", "-(");
 				expression = new Expression(frmlRplc);
 
-				try {	// Needed because specific functions can cause stack overflow in math engine
+				try {	// 'try catch' needed because specific functions can cause stack overflow in math engine
 					resultY = (int) ((graphCenter) - expression.calculate());
 					if (showMessages) { System.out.println("equation: '" + equation + "'" + ", fi: '" + fi + "'" + ", frmlRplc: '" + frmlRplc + "'" + ", expression.calculate(): '" + expression.calculate() + "'" + ", resultY: '" + resultY + "'"); }
 				}
@@ -982,9 +1005,11 @@ public class GraphingCalculator extends JPanel implements ItemListener {
 			}
 
 			grphcs2D.fillRect((int)resultX, (int)resultY, 2, 2);
+
 			if (showMessages) {
 				System.out.println("prvsX: " + prvsX + ", prvsY: " + prvsY + ", frmlRplc: " + frmlRplc + ", resultX: " + resultX + ", resultY: " + resultY );
 			}
+
 			// Interpolate extra point between basic points
 			grphcs2D.fillRect((int)(resultX - prvsX), (int)(resultY - prvsY), 1, 1);
 
@@ -1355,8 +1380,8 @@ public class GraphingCalculator extends JPanel implements ItemListener {
     // Checks whether equation uses any of listed operations. Include new operations here if add any to keyboard
     public static boolean containsFunction(String inputString) {
     	String[] operations = {"sin", "cos", "tan", "csc", "sec", "cot", "abs", "mod", "sgn", "ln", "log10", "floor", "ceil", "Gamma"};
-    	// Test: some functions using 'abs' are skewed when 'abs' is in this list, but most functions need 'abs' here
-    	//String[] operations = {"sin", "cos", "tan", "csc", "sec", "cot", "mod", "sgn", "ln", "log10", "floor", "ceil", "Gamma"};
+    	// Test: some functions using 'abs' and 'sgn' are skewed when 'abs' and 'sgn' are in this list, but most functions need 'abs' and 'sgn' here
+    	//String[] operations = {"sin", "cos", "tan", "csc", "sec", "cot", "mod", "ln", "log10", "floor", "ceil", "Gamma"};
     	boolean hasOperation = false;
 
     	for (String prtr : operations) {
